@@ -35,6 +35,12 @@ function Header() {
         </Link>
         <div className="flex items-center space-x-4">
           <Link
+            href="/viralgo"
+            className="text-sm font-medium text-gray-700 hover:text-gray-900"
+          >
+            App
+          </Link>
+          <Link
             href="/pricing"
             className="text-sm font-medium text-gray-700 hover:text-gray-900"
           >
