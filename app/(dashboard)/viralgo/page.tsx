@@ -1,16 +1,13 @@
 import { redirect } from 'next/navigation';
 import { getTeamForUser, getUser } from '@/lib/db/queries';
+import { Login } from 'app/(login)/login';
 
 export default async function ViralGoPage() {
   const user = await getUser();
 
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Welcome to ViralGo</h1>
-        <p className="mb-4">Please sign in to access ViralGo features</p>
-        {/* Add sign in button/link here */}
-      </div>
+      <Login mode="signin" />
     );
   }
 
