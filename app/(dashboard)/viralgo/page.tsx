@@ -5,7 +5,13 @@ export default async function ViralGoPage() {
   const user = await getUser();
 
   if (!user) {
-    redirect('/sign-in');
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6">Welcome to ViralGo</h1>
+        <p className="mb-4">Please sign in to access ViralGo features</p>
+        {/* Add sign in button/link here */}
+      </div>
+    );
   }
 
   const teamData = await getTeamForUser(user.id);
@@ -14,19 +20,33 @@ export default async function ViralGoPage() {
     throw new Error('Team not found');
   }
 
+  if (teamData.planName === "Base") {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6">ViralGo Base Dashboard</h1>
+        {/* Add Base plan specific features here */}
+        <p>Welcome to your Base plan dashboard</p>
+      </div>
+    );
+  }
+
+  if (teamData.planName === "Plus") {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6">ViralGo Plus Dashboard</h1>
+        {/* Add Plus plan specific features here */}
+        <p>Welcome to your Plus plan dashboard with advanced features</p>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">ViralGo Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-6">ViralGo Preview</h1>
       <p className="mb-4">
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor 
-        incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis 
-        nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+        Try ViralGo free preview to explore our features
       </p>
-      <p>
-        Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore 
-        eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt 
-        in culpa qui officia deserunt mollit anim id est laborum.
-      </p>
+      {/* Add upgrade CTA here */}
     </div>
   );
 }
