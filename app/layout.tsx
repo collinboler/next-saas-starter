@@ -6,37 +6,35 @@ import { getUser } from '@/lib/db/queries';
 import { Analytics } from "@vercel/analytics/react"
 import { ThemeProvider } from 'next-themes';
 
-export const metadata: Metadata = {
-  title: 'Next.js SaaS Starter',
-  description: 'Get started quickly with Next.js, Postgres, and Stripe.',
-};
-
-export const viewport: Viewport = {
-  maximumScale: 1,
-};
-
 const manrope = Manrope({ subsets: ['latin'] });
+
+function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+      storageKey="viralgo-theme"
+    >
+      {children}
+    </ThemeProvider>
+  );
+}
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  let userPromise = getUser();
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`min-h-[100dvh] ${manrope.className}`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <Providers>
           <UserProvider userPromise={getUser() as Promise<any>}>
             {children}
           </UserProvider>
-        </ThemeProvider>
+        </Providers>
         <Analytics />
       </body>
     </html>

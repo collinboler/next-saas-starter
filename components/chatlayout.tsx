@@ -34,7 +34,7 @@ export function ChatLayout({
       {/* Sidebar */}
       <aside
         className={cn(
-          'h-screen w-72 shrink-0 bg-gray-900 transition-all duration-200 ease-in-out',
+          'h-screen w-72 shrink-0 bg-card transition-all duration-200 ease-in-out border-r border-border',
           sidebarOpen ? 'translate-x-0 mr-0' : '-translate-x-72 mr-[-288px]'
         )}
       >
@@ -52,7 +52,7 @@ export function ChatLayout({
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search conversations..."
-              className="pl-8 bg-gray-800 border-gray-700"
+              className="pl-8 bg-background border-border"
             />
           </div>
 
@@ -63,8 +63,8 @@ export function ChatLayout({
                   key={conv.id}
                   variant="ghost"
                   className={cn(
-                    'w-full justify-start text-gray-300 hover:text-white hover:bg-gray-800',
-                    activeConversation === conv.id && 'bg-gray-800 text-white'
+                    'w-full justify-start text-foreground hover:bg-muted',
+                    activeConversation === conv.id && 'bg-muted'
                   )}
                   onClick={() => setActiveConversation(conv.id)}
                 >
