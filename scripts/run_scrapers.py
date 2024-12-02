@@ -31,10 +31,10 @@ def store_daily_trends():
 
     # Convert data to JSON strings
     try:
-        topics_json = json.dumps(topics_data if isinstance(topics_data, list) else {"error": str(topics_data)})
-        hashtags_json = json.dumps(hashtags_data if isinstance(hashtags_data, list) else {"error": str(hashtags_data)})
-        songs_json = json.dumps(songs_data if isinstance(songs_data, list) else {"error": str(songs_data)})
-        creators_json = json.dumps(creators_data if isinstance(creators_data, list) else {"error": str(creators_data)})
+        topics_json = json.dumps({"data": topics_data})
+        hashtags_json = json.dumps({"data": hashtags_data})
+        songs_json = json.dumps({"data": songs_data})
+        creators_json = json.dumps({"data": creators_data})
     except Exception as e:
         print(f"Error converting data to JSON: {e}")
         return
