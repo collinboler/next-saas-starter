@@ -6,7 +6,7 @@ export const runtime = 'edge';
 export async function POST(req: Request) {
   const { messages } = await req.json();
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY || 'your-api-key-here';
   if (!apiKey) {
     return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 });
   }
