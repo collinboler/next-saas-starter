@@ -63,8 +63,8 @@ export function ChatLayout({
                   key={conv.id}
                   variant="ghost"
                   className={cn(
-                    'w-full justify-start',
-                    activeConversation === conv.id && 'bg-gray-800'
+                    'w-full justify-start text-gray-300 hover:text-white hover:bg-gray-800',
+                    activeConversation === conv.id && 'bg-gray-800 text-white'
                   )}
                   onClick={() => setActiveConversation(conv.id)}
                 >
