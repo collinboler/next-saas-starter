@@ -1,7 +1,11 @@
 import { redirect } from 'next/navigation';
 import { getTeamForUser, getUser } from '@/lib/db/queries';
 import { Login } from 'app/(login)/login';
-import { ChatBot } from "@/components/chatbot";
+import React from 'react';
+import { ChatBot } from '@/components/chatbot';
+import { ChatLayout } from '@/components/chatlayout';
+import BaseDashboard from '@/components/BaseDashboard'; // Import BaseDashboard
+
 
 export default async function ViralGoPage() {
   const user = await getUser();
@@ -27,9 +31,11 @@ export default async function ViralGoPage() {
       {team.planName === "Base" && (
         <>
           <h1 className="text-3xl font-bold mb-6">ViralGo Base Dashboard</h1>
-          {/* Add Base plan specific features here */}
-          <ChatBot />
+            
+          <BaseDashboard />
           <p>Welcome to your Base plan dashboard</p>
+
+          
         </>
       )}
 
