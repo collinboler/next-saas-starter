@@ -30,12 +30,12 @@ export function ChatLayout({
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       {/* Sidebar */}
       <aside
         className={cn(
-          'h-screen w-72 bg-gray-900 transition-transform duration-200 ease-in-out',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          'h-screen w-72 shrink-0 bg-gray-900 transition-all duration-200 ease-in-out',
+          sidebarOpen ? 'translate-x-0 mr-0' : '-translate-x-72 mr-[-288px]'
         )}
       >
         <div className="flex h-full flex-col p-4">
@@ -77,7 +77,10 @@ export function ChatLayout({
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className={cn(
+        'flex-1 flex flex-col transition-all duration-200 ease-in-out',
+        sidebarOpen ? 'ml-0' : 'ml-0'
+      )}>
         <header className="h-14 border-b bg-background px-4 flex items-center">
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
             <Menu className="h-5 w-5" />
