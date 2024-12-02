@@ -1,0 +1,5 @@
+ALTER TABLE "daily_trends"
+ALTER COLUMN "topics" TYPE JSONB USING topics::JSONB,
+ALTER COLUMN "hashtags" TYPE JSONB USING hashtags::JSONB,
+ALTER COLUMN "songs" TYPE JSONB USING songs::JSONB,
+ALTER COLUMN "creators" TYPE JSONB USING creators::JSONB; 

@@ -1,0 +1,4 @@
+cron:
+- description: "Daily TikTok trends scraper"
+  url: /api/cron/scrape-trends
+  schedule: "0 0 * * *" 

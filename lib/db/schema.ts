@@ -5,6 +5,7 @@ import {
   text,
   timestamp,
   integer,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -140,3 +141,17 @@ export enum ActivityType {
   INVITE_TEAM_MEMBER = 'INVITE_TEAM_MEMBER',
   ACCEPT_INVITATION = 'ACCEPT_INVITATION',
 }
+
+// Add this to lib/db/schema.ts
+export const dailyTrends = pgTable('daily_trends', {
+  id: serial('id').primaryKey(),
+  topics: text('topics'),
+  hashtags: text('hashtags'),
+  songs: text('songs'),
+  creators: text('creators'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Also add the type definitions
+export type DailyTrend = typeof dailyTrends.$inferSelect;
+export type NewDailyTrend = typeof dailyTrends.$inferInsert;
