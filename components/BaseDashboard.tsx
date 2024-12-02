@@ -10,8 +10,6 @@ export default function BaseDashboard() {
   const [conversations, setConversations] = React.useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] = React.useState<string | null>(null);
 
-  // You can add any additional state or functions specific to the Base plan here
-
   return (
     <ChatLayout
       conversations={conversations}

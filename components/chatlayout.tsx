@@ -86,7 +86,11 @@ export function ChatLayout({
             <Menu className="h-5 w-5" />
           </Button>
         </header>
-        <main className="flex-1 overflow-hidden">{children}</main>
+        <main className="flex-1 overflow-hidden">
+          <div className="max-w-3xl mx-auto w-full h-full">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );
