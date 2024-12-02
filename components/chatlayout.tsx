@@ -32,9 +32,9 @@ export function ChatLayout({
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
-      <div
+      <aside
         className={cn(
-          'fixed left-0 z-40 h-screen w-72 transform bg-gray-900 transition-transform duration-200 ease-in-out dark',
+          'h-screen w-72 bg-gray-900 transition-transform duration-200 ease-in-out',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -56,7 +56,7 @@ export function ChatLayout({
             />
           </div>
 
-          <div className="flex-1 overflow-y-auto pr-4">
+          <div className="flex-1 overflow-y-auto">
             <div className="space-y-2">
               {conversations.map((conv) => (
                 <Button
@@ -74,21 +74,16 @@ export function ChatLayout({
             </div>
           </div>
         </div>
-      </div>
+      </aside>
 
       {/* Main Content */}
-      <div
-        className={cn(
-          'flex-1 transition-margin duration-200 ease-in-out',
-          sidebarOpen ? 'ml-72' : 'ml-0'
-        )}
-      >
-        <header className="fixed top-0 z-30 flex h-14 w-full items-center justify-between border-b bg-background px-4">
+      <div className="flex-1 flex flex-col">
+        <header className="h-14 border-b bg-background px-4 flex items-center">
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
             <Menu className="h-5 w-5" />
           </Button>
         </header>
-        <main className="pt-14">{children}</main>
+        <main className="flex-1 overflow-hidden">{children}</main>
       </div>
     </div>
   );
