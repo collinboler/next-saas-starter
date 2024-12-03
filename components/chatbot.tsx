@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { Paperclip, Send, Trash2 } from 'lucide-react';
+import { Paperclip, Send, Trash2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -15,11 +15,16 @@ interface ChatBotProps {
   setActiveConversation: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-const suggestions = [
-  'Tell me a joke',
-  'Explain quantum computing',
-  'Write a haiku about coding',
-  'Describe the taste of colors',
+const initialSuggestions = [
+  'Give me a video idea for the motivation niche',
+  'What topics are trending in USA? ',
+  'More '
+];
+
+const moreSuggestions = [
+  'Help me write a blog post',
+  'Generate a cool business idea',
+  'Create a big workout plan',
 ];
 
 export function ChatBot({
@@ -30,6 +35,7 @@ export function ChatBot({
 }: ChatBotProps) {
   const [input, setInput] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
+  const [showAllSuggestions, setShowAllSuggestions] = React.useState(false);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -197,7 +203,11 @@ export function ChatBot({
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    setInput(suggestion);
+    if (suggestion === 'More ') {
+      setShowAllSuggestions(!showAllSuggestions);
+    } else {
+      setInput(suggestion);
+    }
   };
 
   const currentConversation = activeConversation
@@ -239,18 +249,6 @@ export function ChatBot({
         ) : (
           <div className="flex h-full flex-col items-center justify-center">
             <h1 className="mb-8 text-4xl font-bold">What can I help with?</h1>
-            <div className="w-full max-w-md space-y-4">
-              {suggestions.map((suggestion, index) => (
-                <Button
-                  key={index}
-                  className="w-full justify-start"
-                  variant="outline"
-                  onClick={() => handleSuggestionClick(suggestion)}
-                >
-                  {suggestion}
-                </Button>
-              ))}
-            </div>
           </div>
         )}
         {isLoading && (
@@ -267,22 +265,58 @@ export function ChatBot({
         )}
         <div ref={messagesEndRef} />
       </div>
-      <div className="border-t">
-        <form onSubmit={handleSubmit} className="flex space-x-2 p-4">
-          <Button type="button" variant="ghost" size="icon" className="shrink-0">
-            <Paperclip className="h-5 w-5" />
-          </Button>
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Message ChatGPT..."
-            className="flex-1"
-            disabled={isLoading}
-          />
-          <Button type="submit" disabled={isLoading} className="shrink-0">
-            <Send className="h-5 w-5" />
-          </Button>
-        </form>
+      {!currentConversation && (
+        <div className="px-4 pb-2">
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {initialSuggestions.map((suggestion, index) => (
+                <Button
+                  key={index}
+                  className="shrink-0 text-base"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSuggestionClick(suggestion)}
+                >
+                  {suggestion}
+                </Button>
+              ))}
+            </div>
+            {showAllSuggestions && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {moreSuggestions.map((suggestion, index) => (
+                  <Button
+                    key={index}
+                    className="shrink-0 text-base"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSuggestionClick(suggestion)}
+                  >
+                    {suggestion}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      <div className="p-4">
+        <div className="border rounded-lg bg-background">
+          <form onSubmit={handleSubmit} className="flex space-x-2 p-4">
+            <Button type="button" variant="ghost" size="icon" className="shrink-0">
+              <Paperclip className="h-5 w-5" />
+            </Button>
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Message ChatGPT..."
+              className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+              disabled={isLoading}
+            />
+            <Button type="submit" disabled={isLoading} className="shrink-0">
+              <Send className="h-5 w-5" />
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   );
