@@ -104,68 +104,10 @@ function Header() {
 function Footer() {
   return (
     <footer className="bg-gray-50 border-t border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div>
-            <Link href="/" className="flex items-center">
-              <CircleIcon className="h-6 w-6 text-orange-500" />
-              <span className="ml-2 text-xl font-semibold text-gray-900">ViralGo</span>
-            </Link>
-            <p className="mt-4 text-sm text-gray-600">
-              Empowering content creators to reach new heights in social media engagement.
-            </p>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 tracking-wider uppercase">Product</h3>
-            <ul className="mt-4 space-y-4">
-              <li>
-                <Link href="/features" className="text-base text-gray-600 hover:text-gray-900">
-                  Features
-                </Link>
-              </li>
-              <li>
-                <Link href="/pricing" className="text-base text-gray-600 hover:text-gray-900">
-                  Pricing
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 tracking-wider uppercase">Support</h3>
-            <ul className="mt-4 space-y-4">
-              <li>
-                <Link href="/docs" className="text-base text-gray-600 hover:text-gray-900">
-                  Documentation
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-base text-gray-600 hover:text-gray-900">
-                  Contact
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 tracking-wider uppercase">Legal</h3>
-            <ul className="mt-4 space-y-4">
-              <li>
-                <Link href="/privacy" className="text-base text-gray-600 hover:text-gray-900">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="/terms" className="text-base text-gray-600 hover:text-gray-900">
-                  Terms of Service
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div className="mt-8 border-t border-gray-200 pt-8">
-          <p className="text-base text-gray-400 text-center">
-            © {new Date().getFullYear()} ViralGo. All rights reserved.
-          </p>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 py-2">
+        <p className="text-sm text-gray-400 text-center">
+          © {new Date().getFullYear()} ViralGo
+        </p>
       </div>
     </footer>
   );

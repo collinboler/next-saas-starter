@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Message, Conversation } from 'app/types/chat';
+import { cn } from '@/lib/utils';
 
 interface ChatBotProps {
   activeConversation: string | null;
@@ -215,8 +216,11 @@ export function ChatBot({
     : null;
 
   return (
-    <div className="flex h-[calc(66vh-3.5rem)] flex-col">
-      <div className="flex-1 overflow-y-auto p-4">
+    <div className="flex h-[calc(100vh-8rem)] flex-col">
+      <div className={cn(
+        "flex-1 overflow-y-auto p-4 transition-all duration-300",
+        currentConversation ? "translate-y-0" : "flex items-center justify-center"
+      )}>
         {currentConversation ? (
           currentConversation.messages.map((message, index) => (
             <div key={index} className="mb-6 flex group">
@@ -247,7 +251,7 @@ export function ChatBot({
             </div>
           ))
         ) : (
-          <div className="flex h-full flex-col items-center justify-center">
+          <div className="text-center">
             <h1 className="mb-8 text-4xl font-bold">What can I help with?</h1>
           </div>
         )}
