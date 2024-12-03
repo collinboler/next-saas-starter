@@ -57,11 +57,11 @@ export function ChatLayout({
   );
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-[calc(66vh-3.5rem)] bg-background overflow-hidden">
       {/* Sidebar */}
       <aside
         className={cn(
-          'h-screen w-72 shrink-0 bg-card transition-all duration-200 ease-in-out border-r border-border',
+          'h-[calc(66vh-3.5rem)] w-72 shrink-0 bg-card transition-all duration-200 ease-in-out border-r border-border',
           sidebarOpen ? 'translate-x-0 mr-0' : '-translate-x-72 mr-[-288px]'
         )}
       >

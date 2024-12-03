@@ -205,7 +205,7 @@ export function ChatBot({
     : null;
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] flex-col">
+    <div className="flex h-[calc(66vh-3.5rem)] flex-col">
       <div className="flex-1 overflow-y-auto p-4">
         {currentConversation ? (
           currentConversation.messages.map((message, index) => (
@@ -267,8 +267,8 @@ export function ChatBot({
         )}
         <div ref={messagesEndRef} />
       </div>
-      <div className="border-t p-4">
-        <form onSubmit={handleSubmit} className="flex space-x-2">
+      <div className="border-t">
+        <form onSubmit={handleSubmit} className="flex space-x-2 p-4">
           <Button type="button" variant="ghost" size="icon" className="shrink-0">
             <Paperclip className="h-5 w-5" />
           </Button>
