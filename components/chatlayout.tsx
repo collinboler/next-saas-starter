@@ -24,10 +24,15 @@ export function ChatLayout({
   setActiveConversation,
 }: ChatLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const createNewChat = () => {
     setActiveConversation(null);
   };
+
+  const filteredConversations = conversations.filter((conv) =>
+    conv.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -53,12 +58,14 @@ export function ChatLayout({
             <Input
               placeholder="Search conversations..."
               className="pl-8 bg-background border-border"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
           <div className="flex-1 overflow-y-auto">
             <div className="space-y-2">
-              {conversations.map((conv) => (
+              {filteredConversations.map((conv) => (
                 <Button
                   key={conv.id}
                   variant="ghost"
