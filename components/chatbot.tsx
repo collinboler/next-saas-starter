@@ -17,13 +17,12 @@ interface ChatBotProps {
 }
 
 const initialSuggestions = [
-  'Give me a video idea for the motivation niche',
-  'What topics are trending in USA? ',
-  'More '
+  'Give me a video idea for motivation niche',
+  'What topics are trending in USA?'
 ];
 
 const moreSuggestions = [
-  'Help me write a blog post',
+  'Write me a blog post',
   'Generate a cool business idea',
   'Create a big workout plan',
 ];
@@ -204,11 +203,7 @@ export function ChatBot({
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    if (suggestion === 'More ') {
-      setShowAllSuggestions(!showAllSuggestions);
-    } else {
-      setInput(suggestion);
-    }
+    setInput(suggestion);
   };
 
   const currentConversation = activeConversation
@@ -217,10 +212,7 @@ export function ChatBot({
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col">
-      <div className={cn(
-        "flex-1 overflow-y-auto p-4 transition-all duration-300",
-        currentConversation ? "translate-y-0" : "flex items-center justify-center"
-      )}>
+      <div className="flex-1 overflow-y-auto p-4">
         {currentConversation ? (
           currentConversation.messages.map((message, index) => (
             <div key={index} className="mb-6 flex group">
@@ -251,8 +243,70 @@ export function ChatBot({
             </div>
           ))
         ) : (
-          <div className="text-center">
+          <div className="flex flex-col items-center justify-center h-full">
             <h1 className="mb-8 text-4xl font-bold">What can I help with?</h1>
+            <div className="w-full max-w-2xl">
+              <div className="border rounded-lg bg-background">
+                <form onSubmit={handleSubmit} className="flex space-x-2 p-4">
+                  <Button type="button" variant="ghost" size="icon" className="shrink-0">
+                    <Paperclip className="h-5 w-5" />
+                  </Button>
+                  <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Message ChatGPT..."
+                    className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                    disabled={isLoading}
+                  />
+                  <Button type="submit" disabled={isLoading} className="shrink-0">
+                    <Send className="h-5 w-5" />
+                  </Button>
+                </form>
+              </div>
+              
+              <div className="mt-4">
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-center gap-2 overflow-x-auto pb-2">
+                    {initialSuggestions.map((suggestion, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        className="shrink-0 text-base"
+                      >
+                        {suggestion}
+                      </Button>
+                    ))}
+                    {!showAllSuggestions && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAllSuggestions(true)}
+                        className="shrink-0 text-base"
+                      >
+                        More
+                      </Button>
+                    )}
+                  </div>
+                  {showAllSuggestions && (
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                      {moreSuggestions.map((suggestion, index) => (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSuggestionClick(suggestion)}
+                          className="shrink-0 text-base"
+                        >
+                          {suggestion}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
         {isLoading && (
@@ -269,59 +323,28 @@ export function ChatBot({
         )}
         <div ref={messagesEndRef} />
       </div>
-      {!currentConversation && (
-        <div className="px-4 pb-2">
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {initialSuggestions.map((suggestion, index) => (
-                <Button
-                  key={index}
-                  className="shrink-0 text-base"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleSuggestionClick(suggestion)}
-                >
-                  {suggestion}
-                </Button>
-              ))}
-            </div>
-            {showAllSuggestions && (
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {moreSuggestions.map((suggestion, index) => (
-                  <Button
-                    key={index}
-                    className="shrink-0 text-base"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleSuggestionClick(suggestion)}
-                  >
-                    {suggestion}
-                  </Button>
-                ))}
-              </div>
-            )}
+
+      {currentConversation && (
+        <div className="p-4">
+          <div className="border rounded-lg bg-background">
+            <form onSubmit={handleSubmit} className="flex space-x-2 p-4">
+              <Button type="button" variant="ghost" size="icon" className="shrink-0">
+                <Paperclip className="h-5 w-5" />
+              </Button>
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Message ChatGPT..."
+                className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                disabled={isLoading}
+              />
+              <Button type="submit" disabled={isLoading} className="shrink-0">
+                <Send className="h-5 w-5" />
+              </Button>
+            </form>
           </div>
         </div>
       )}
-      <div className="p-4">
-        <div className="border rounded-lg bg-background">
-          <form onSubmit={handleSubmit} className="flex space-x-2 p-4">
-            <Button type="button" variant="ghost" size="icon" className="shrink-0">
-              <Paperclip className="h-5 w-5" />
-            </Button>
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Message ChatGPT..."
-              className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-              disabled={isLoading}
-            />
-            <Button type="submit" disabled={isLoading} className="shrink-0">
-              <Send className="h-5 w-5" />
-            </Button>
-          </form>
-        </div>
-      </div>
     </div>
   );
 }

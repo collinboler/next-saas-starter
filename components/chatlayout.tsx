@@ -29,7 +29,7 @@ export function ChatLayout({
   activeConversation,
   setActiveConversation,
 }: ChatLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -62,7 +62,7 @@ export function ChatLayout({
       <aside
         className={cn(
           'h-[calc(100vh-8rem)] w-72 shrink-0 bg-card transition-all duration-200 ease-in-out border-r border-border',
-          sidebarOpen ? 'translate-x-0 mr-0' : '-translate-x-72 mr-[-288px]'
+          isSidebarOpen ? 'translate-x-0 mr-0' : '-translate-x-72 mr-[-288px]'
         )}
       >
         <div className="flex h-full flex-col p-4">
@@ -155,10 +155,10 @@ export function ChatLayout({
       {/* Main Content */}
       <div className={cn(
         'flex-1 flex flex-col transition-all duration-200 ease-in-out',
-        sidebarOpen ? 'ml-0' : 'ml-0'
+        isSidebarOpen ? 'ml-0' : 'ml-0'
       )}>
         <header className="h-14 border-b bg-background px-4 flex items-center">
-          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+          <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
             <Menu className="h-5 w-5" />
           </Button>
         </header>
