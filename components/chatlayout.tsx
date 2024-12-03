@@ -61,7 +61,8 @@ export function ChatLayout({
       {/* Sidebar */}
       <aside
         className={cn(
-          'h-[calc(100vh-8rem)] w-72 shrink-0 bg-card transition-all duration-200 ease-in-out border-r border-border',
+          'h-[calc(100vh-8rem)] w-72 shrink-0 transition-all duration-200 ease-in-out border-r border-border',
+          'dark:bg-zinc-900 bg-zinc-50',
           isSidebarOpen ? 'translate-x-0 mr-0' : '-translate-x-72 mr-[-288px]'
         )}
       >
