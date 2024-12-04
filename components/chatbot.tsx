@@ -27,6 +27,16 @@ const moreSuggestions = [
   'Create a big workout plan',
 ];
 
+const ThinkingDots = () => {
+  return (
+    <span className="inline-flex">
+      <span className="animate-dot-1">.</span>
+      <span className="animate-dot-2">.</span>
+      <span className="animate-dot-3">.</span>
+    </span>
+  );
+};
+
 export function ChatBot({
   activeConversation,
   conversations,
@@ -317,7 +327,9 @@ export function ChatBot({
             </Avatar>
             <div className="flex-1">
               <p className="text-sm text-muted-foreground mb-1">Assistant</p>
-              <p className="text-sm">Thinking...</p>
+              <p className="text-sm">
+                Thinking<ThinkingDots />
+              </p>
             </div>
           </div>
         )}

@@ -68,3 +68,25 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes dotFade {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+@layer utilities {
+  .animate-dot-1 {
+    animation: dotFade 1.5s infinite;
+    animation-delay: 0s;
+  }
+  
+  .animate-dot-2 {
+    animation: dotFade 1.5s infinite;
+    animation-delay: 0.5s;
+  }
+  
+  .animate-dot-3 {
+    animation: dotFade 1.5s infinite;
+    animation-delay: 1s;
+  }
+}
