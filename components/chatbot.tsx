@@ -17,8 +17,8 @@ interface ChatBotProps {
 }
 
 const initialSuggestions = [
-  'Give me a video idea for motivation niche',
-  'What topics are trending in USA?'
+  'Give me a viral video idea',
+  'What topics are trending on TikTok?'
 ];
 
 const moreSuggestions = [

@@ -22,7 +22,8 @@ export default async function ViralGoPage() {
 
   // Redirect to pricing if no plan is selected
   if (!team.planName) {
-    redirect('/pricing');
+
+    redirect('/pricing'); 
   }
 
   // Common layout wrapper for all plan types
