@@ -221,7 +221,7 @@ export function ChatBot({
     : null;
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col">
+    <div className="flex h-[calc(100vh-12rem)] flex-col">
       <div className="flex-1 overflow-y-auto p-4">
         {currentConversation ? (
           currentConversation.messages.map((message, index) => (
