@@ -1,13 +1,38 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Copy, Check, TrendingUp, Heart, MessageCircle, Share2 } from 'lucide-react';
+import { Copy, Check, TrendingUp, Heart, MessageCircle, Share2, MoreHorizontal, Send } from 'lucide-react';
+
+// Add the verified badge SVG component
+const VerifiedBadge = () => (
+  <svg 
+    width="20" 
+    height="20" 
+    viewBox="0 0 20 20" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    className="inline-block ml-1"
+  >
+    <circle cx="10" cy="10" r="10" fill="#20D5EC"/>
+    <path
+      d="M5.5 10L8.5 13L14.5 7"
+      stroke="white"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 export function Terminal() {
   const [followerCount, setFollowerCount] = useState(1000);
+  const [likeCount, setLikeCount] = useState(5000);
+  const [followingCount] = useState(14); // Static count from image
   const [copied, setCopied] = useState(false);
   const [graphPoints, setGraphPoints] = useState<number[]>([]);
-  const targetFollowers = 1000000; // 1M followers
+  
+  const targetFollowers = 83200000; // 83.2M followers
+  const targetLikes = 335600000; // 335.6M likes
   
   const formatNumber = (num: number) => {
     if (num >= 1000000) {
@@ -19,6 +44,8 @@ export function Terminal() {
   };
 
   useEffect(() => {
+    setGraphPoints(Array(20).fill(0).map((_, i) => 20 + (i * 2)));
+
     const timer = setInterval(() => {
       setFollowerCount(prev => {
         const increase = Math.floor(prev * 0.1);
@@ -26,9 +53,21 @@ export function Terminal() {
         return next >= targetFollowers ? targetFollowers : next;
       });
 
+      setLikeCount(prev => {
+        const increase = Math.floor(prev * 0.12);
+        const next = prev + increase;
+        return next >= targetLikes ? targetLikes : next;
+      });
+
       setGraphPoints(prev => {
-        const newPoint = Math.random() * 50 + 50; // Random value between 50-100
-        return [...prev, newPoint].slice(-20); // Keep last 20 points
+        const lastPoint = prev[prev.length - 1];
+        const volatility = Math.random() * 10 - 2;
+        const trendStrength = 2;
+        const newPoint = Math.min(
+          Math.max(lastPoint + trendStrength + volatility, 20),
+          95
+        );
+        return [...prev.slice(1), newPoint];
       });
     }, 200);
 
@@ -36,76 +75,117 @@ export function Terminal() {
   }, []);
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(`Follow @viralgo on TikTok! We grew from 1K to ${formatNumber(targetFollowers)} followers!`);
+    navigator.clipboard.writeText(
+      `Follow @viralgo on TikTok! We grew from 1K to ${formatNumber(targetFollowers)} followers with ${formatNumber(targetLikes)} likes!`
+    );
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const createPathFromPoints = (points: number[]): string => {
+    if (points.length < 2) return '';
+    const height = 100;
+    const width = 100;
+    const xStep = width / (points.length - 1);
+    return points.reduce((path, point, i) => {
+      const x = i * xStep;
+      const y = height - point;
+      return path + `${i === 0 ? 'M' : 'L'} ${x},${y}`;
+    }, '');
   };
 
   return (
     <div className="w-full rounded-2xl overflow-hidden bg-black text-white relative">
       <div className="relative aspect-[16/9] bg-gradient-to-b from-gray-900 to-black p-4">
-        {/* Graph Animation */}
-        <div className="absolute inset-0 flex items-end justify-between px-4 pb-12 opacity-30">
-          {graphPoints.map((point, i) => (
-            <div
-              key={i}
-              className="w-1 bg-pink-500 rounded-t transition-all duration-200 ease-out"
-              style={{ height: `${point}%` }}
+        {/* Background Graph - keeping the existing graph animation */}
+        <div className="absolute inset-0">
+          <svg
+            className="w-full h-full opacity-30"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
+            <defs>
+              <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="rgb(236, 72, 153)" stopOpacity="1" />
+                <stop offset="100%" stopColor="rgb(236, 72, 153)" stopOpacity="0.1" />
+              </linearGradient>
+              <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="rgb(236, 72, 153)" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="rgb(236, 72, 153)" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            
+            <path
+              d={`${createPathFromPoints(graphPoints)} L 100,100 L 0,100 Z`}
+              fill="url(#areaGradient)"
             />
-          ))}
+            
+            <path
+              d={createPathFromPoints(graphPoints)}
+              fill="none"
+              stroke="url(#lineGradient)"
+              strokeWidth="0.5"
+            />
+          </svg>
         </div>
 
-        {/* TikTok-style Content */}
-        <div className="absolute inset-0 flex flex-col justify-between p-4">
-          <div className="flex items-center space-x-3">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-pink-500 to-orange-500 p-[2px]">
-              <div className="h-full w-full rounded-full bg-black p-[2px]">
-                <div className="h-full w-full rounded-full bg-gradient-to-tr from-pink-500 to-orange-500" />
+        {/* TikTok Profile Layout */}
+        <div className="absolute inset-0 flex flex-col p-6">
+          {/* Header with Profile Info */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="h-16 w-16 rounded-full bg-[#7fffd4] flex items-center justify-center">
+                <span className="text-black font-bold text-xs">ViralGo</span>
               </div>
+              <div>
+                <div className="flex items-center">
+                  <span className="font-bold text-xl">viralGo</span>
+                  <VerifiedBadge />
+                </div>
+                <h2 className="font-bold text-xl">Go Viral with AI</h2>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex space-x-3 mb-6">
+            <button className="bg-[#FE2C55] px-8 py-2 rounded-md font-semibold">
+              Follow
+            </button>
+            <button className="bg-[#2F2F2F] px-8 py-2 rounded-md">
+              Message
+            </button>
+            <button className="bg-[#2F2F2F] p-2 rounded-md">
+              <Send className="h-5 w-5" />
+            </button>
+            <button className="bg-[#2F2F2F] p-2 rounded-md">
+              <MoreHorizontal className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Stats */}
+          <div className="flex space-x-6 mb-4">
+            <div>
+              <span className="font-bold">{followingCount}</span>
+              <span className="text-gray-400 ml-2">Following</span>
             </div>
             <div>
-              <h3 className="font-bold">@viralgo</h3>
-              <p className="text-sm text-gray-400">Going viral...</p>
+              <span className="font-bold">{formatNumber(followerCount)}</span>
+              <span className="text-gray-400 ml-2">Followers</span>
+            </div>
+            <div>
+              <span className="font-bold">{formatNumber(likeCount)}</span>
+              <span className="text-gray-400 ml-2">Likes</span>
             </div>
           </div>
 
-          <div className="flex justify-between items-end">
-            <div className="space-y-2">
-              <div className="text-4xl font-bold tracking-tighter">
-                {formatNumber(followerCount)}
-                <span className="text-lg ml-2 text-pink-500">followers</span>
-              </div>
-              <div className="text-sm">
-                {followerCount >= targetFollowers ? (
-                  "🚀 We've reached 1M followers!"
-                ) : (
-                  "📈 Watch us grow in real-time"
-                )}
-              </div>
-            </div>
-
-            {/* TikTok-style Interaction Buttons */}
-            <div className="flex space-x-4">
-              <button className="flex flex-col items-center">
-                <div className="w-10 h-10 bg-black/50 rounded-full flex items-center justify-center">
-                  <Heart className="h-5 w-5" />
-                </div>
-                <span className="text-xs mt-1">123.4K</span>
-              </button>
-              <button className="flex flex-col items-center">
-                <div className="w-10 h-10 bg-black/50 rounded-full flex items-center justify-center">
-                  <MessageCircle className="h-5 w-5" />
-                </div>
-                <span className="text-xs mt-1">1.2K</span>
-              </button>
-              <button onClick={copyToClipboard} className="flex flex-col items-center">
-                <div className="w-10 h-10 bg-black/50 rounded-full flex items-center justify-center">
-                  {copied ? <Check className="h-5 w-5" /> : <Share2 className="h-5 w-5" />}
-                </div>
-                <span className="text-xs mt-1">Share</span>
-              </button>
-            </div>
-          </div>
+          {/* Bio */}
+          <p className="text-lg mb-4">Try free today!</p>
+          
+          {/* Link */}
+          <a href="#" className="text-[#FE2C55] mb-4">
+            https://viralgo.tech
+          </a>
         </div>
       </div>
     </div>
