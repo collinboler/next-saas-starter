@@ -31,8 +31,8 @@ export function Terminal() {
   const [copied, setCopied] = useState(false);
   const [graphPoints, setGraphPoints] = useState<number[]>([]);
   
-  const targetFollowers = 83200000; // 83.2M followers
-  const targetLikes = 335600000; // 335.6M likes
+  const targetFollowers = 69000000; // 83.2M followers
+  const targetLikes = 420000000; // 335.6M likes
   
   const formatNumber = (num: number) => {
     if (num >= 1000000) {
@@ -164,18 +164,18 @@ export function Terminal() {
           </div>
 
           {/* Stats */}
-          <div className="flex space-x-6 mb-4">
-            <div>
-              <span className="font-bold">{followingCount}</span>
-              <span className="text-gray-400 ml-2">Following</span>
+          <div className="flex space-x-4 mb-3">
+            <div className="flex items-baseline">
+              <div className="w-8 text-right font-bold">{followingCount}</div>
+              <span className="text-gray-400 ml-1 text-sm whitespace-nowrap">Following</span>
             </div>
-            <div>
-              <span className="font-bold">{formatNumber(followerCount)}</span>
-              <span className="text-gray-400 ml-2">Followers</span>
+            <div className="flex items-baseline">
+              <div className="w-16 text-right font-bold">{formatNumber(followerCount)}</div>
+              <span className="text-gray-400 ml-1 text-sm whitespace-nowrap">Followers</span>
             </div>
-            <div>
-              <span className="font-bold">{formatNumber(likeCount)}</span>
-              <span className="text-gray-400 ml-2">Likes</span>
+            <div className="flex items-baseline">
+              <div className="w-16 text-right font-bold">{formatNumber(likeCount)}</div>
+              <span className="text-gray-400 ml-1 text-sm whitespace-nowrap">Likes</span>
             </div>
           </div>
 
