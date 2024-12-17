@@ -51,7 +51,9 @@ export default function DashboardLayout({
                 <Button
                   variant={pathname === item.href ? 'secondary' : 'ghost'}
                   className={`my-1 w-full justify-start ${
-                    pathname === item.href ? 'bg-gray-100' : ''
+                    pathname === item.href 
+                      ? 'bg-gray-100 dark:bg-gray-800 dark:text-white' 
+                      : ''
                   }`}
                   onClick={() => setIsSidebarOpen(false)}
                 >

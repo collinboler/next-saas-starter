@@ -95,8 +95,8 @@ export function Terminal() {
   };
 
   return (
-    <div className="w-full rounded-2xl overflow-hidden bg-black text-white relative">
-      <div className="relative aspect-[16/9] bg-gradient-to-b from-gray-900 to-black p-4">
+    <div className="w-[800px] h-[300px] rounded-2xl overflow-hidden bg-background text-foreground relative">
+      <div className="relative w-full h-full bg-gradient-to-b from-muted to-background p-4">
         {/* Background Graph - keeping the existing graph animation */}
         <div className="absolute inset-0">
           <svg
@@ -139,7 +139,7 @@ export function Terminal() {
               </div>
               <div>
                 <div className="flex items-center">
-                  <span className="font-bold text-xl">viralGo</span>
+                  <span className="font-bold text-xl">viralgo</span>
                   <VerifiedBadge />
                 </div>
                 <h2 className="font-bold text-xl">Go Viral with AI</h2>
@@ -149,10 +149,10 @@ export function Terminal() {
 
           {/* Action Buttons */}
           <div className="flex space-x-3 mb-6">
-            <button className="bg-[#FE2C55] px-8 py-2 rounded-md font-semibold">
+            <button className="bg-primary text-primary-foreground px-8 py-2 rounded-md font-semibold">
               Follow
             </button>
-            <button className="bg-[#2F2F2F] px-8 py-2 rounded-md">
+            <button className="bg-secondary text-secondary-foreground px-8 py-2 rounded-md">
               Message
             </button>
             <button className="bg-[#2F2F2F] p-2 rounded-md">
@@ -167,15 +167,15 @@ export function Terminal() {
           <div className="flex space-x-4 mb-3">
             <div className="flex items-baseline">
               <div className="w-8 text-right font-bold">{followingCount}</div>
-              <span className="text-gray-400 ml-1 text-sm whitespace-nowrap">Following</span>
+              <span className="text-muted-foreground ml-1 text-sm whitespace-nowrap">Following</span>
             </div>
             <div className="flex items-baseline">
               <div className="w-16 text-right font-bold">{formatNumber(followerCount)}</div>
-              <span className="text-gray-400 ml-1 text-sm whitespace-nowrap">Followers</span>
+              <span className="text-muted-foreground ml-1 text-sm whitespace-nowrap">Followers</span>
             </div>
             <div className="flex items-baseline">
               <div className="w-16 text-right font-bold">{formatNumber(likeCount)}</div>
-              <span className="text-gray-400 ml-1 text-sm whitespace-nowrap">Likes</span>
+              <span className="text-muted-foreground ml-1 text-sm whitespace-nowrap">Likes</span>
             </div>
           </div>
 

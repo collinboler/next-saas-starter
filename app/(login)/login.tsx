@@ -21,12 +21,12 @@ export function Login({ mode = 'signin' }: { mode?: 'signin' | 'signup' }) {
   );
 
   return (
-    <div className="min-h-[100dvh] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+    <div className="min-h-[100dvh] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 bg-background">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <CircleIcon className="h-12 w-12 text-orange-500" />
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
           {mode === 'signin'
             ? 'Sign in to your account'
             : 'Create your account'}
@@ -41,7 +41,7 @@ export function Login({ mode = 'signin' }: { mode?: 'signin' | 'signup' }) {
           <div>
             <Label
               htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-foreground"
             >
               Email
             </Label>
@@ -53,7 +53,7 @@ export function Login({ mode = 'signin' }: { mode?: 'signin' | 'signup' }) {
                 autoComplete="email"
                 required
                 maxLength={50}
-                className="appearance-none rounded-full relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-full relative block w-full px-3 py-2 border border-input placeholder-muted-foreground text-foreground focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
                 placeholder="Enter your email"
               />
             </div>

@@ -265,7 +265,7 @@ export function ChatBot({
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Message ChatGPT..."
-                    className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                    className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                     disabled={isLoading}
                   />
                   <Button type="submit" disabled={isLoading} className="shrink-0">
@@ -347,7 +347,7 @@ export function ChatBot({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Message ChatGPT..."
-                className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                 disabled={isLoading}
               />
               <Button type="submit" disabled={isLoading} className="shrink-0">

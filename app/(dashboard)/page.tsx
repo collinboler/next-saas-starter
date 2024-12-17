@@ -7,10 +7,10 @@ export default function HomePage() {
   return (
     <main>
       <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="lg:grid lg:grid-cols-12 lg:gap-8">
-            <div className="sm:text-center md:max-w-2xl md:mx-auto lg:col-span-6 lg:text-left">
-              <h1 className="text-4xl font-bold text-gray-900 tracking-tight sm:text-5xl md:text-6xl">
+        <div className="max-w-[800px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="lg:grid lg:grid-cols-12 lg:gap-12">
+            <div className="sm:text-center md:max-w-2xl md:mx-auto lg:col-span-5 lg:text-left">
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white tracking-tight sm:text-5xl md:text-6xl">
                 Go Viral with
                 <span className="block text-orange-500">ViralGo</span>
               </h1>
@@ -28,7 +28,7 @@ export default function HomePage() {
                 </Link>
               </div>
             </div>
-            <div className="mt-12 relative sm:max-w-lg sm:mx-auto lg:mt-0 lg:max-w-none lg:mx-0 lg:col-span-6 lg:flex lg:items-center">
+            <div className="mt-12 relative h-[450px] sm:mx-auto lg:mt-0 lg:mx-0 lg:col-span-7 lg:flex lg:items-center">
               <Terminal />
             </div>
           </div>
