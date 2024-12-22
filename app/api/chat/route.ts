@@ -38,6 +38,8 @@ export async function POST(req: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          let responseStarted = false;
+          
           while (true) {
             const runStatus = await openai.beta.threads.runs.retrieve(
               thread.id,
@@ -50,13 +52,19 @@ export async function POST(req: NextRequest) {
               
               if (lastMessage.content[0].type === 'text') {
                 const text = lastMessage.content[0].text.value;
-                // Stream the response chunk by chunk
-                const encoder = new TextEncoder();
-                const chunks = text.match(/.{1,4}/g) || [];
                 
+                // Send an initial empty chunk to signal the start of the response
+                if (!responseStarted) {
+                  controller.enqueue(new TextEncoder().encode(''));
+                  responseStarted = true;
+                  // Add a delay to show the "Thinking..." state
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+
+                // Stream the response chunk by chunk
+                const chunks = text.match(/.{1,4}/g) || [];
                 for (const chunk of chunks) {
-                  controller.enqueue(encoder.encode(chunk));
-                  // Add a small delay between chunks
+                  controller.enqueue(new TextEncoder().encode(chunk));
                   await new Promise(resolve => setTimeout(resolve, 20));
                 }
               }

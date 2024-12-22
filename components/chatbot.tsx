@@ -73,6 +73,7 @@ export function ChatBot({
 
     const userMessage: Message = { role: 'user', content: input };
     setInput('');
+    setIsLoading(true);
 
     // Update conversation with user message
     currentConversation.messages.push(userMessage);
@@ -125,7 +126,7 @@ export function ChatBot({
           }
 
           const text = decoder.decode(value);
-          if (!firstChunkReceived) {
+          if (!firstChunkReceived && text.length > 0) {
             setIsLoading(false);
             firstChunkReceived = true;
           }
@@ -297,7 +298,15 @@ export function ChatBot({
                 <p className="text-sm text-muted-foreground mb-1">
                   {message.role === 'user' ? 'You' : 'Assistant'}
                 </p>
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <p className="text-sm whitespace-pre-wrap">
+                  {message.role === 'assistant' && message.content === '' && isLoading ? (
+                    <span>
+                      Thinking<ThinkingDots />
+                    </span>
+                  ) : (
+                    message.content
+                  )}
+                </p>
               </div>
               <Button
                 variant="ghost"
@@ -373,20 +382,6 @@ export function ChatBot({
                   )}
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-        {isLoading && (
-          <div className="mb-6 flex">
-            <Avatar className="h-8 w-8 mr-4">
-              <AvatarImage src="/bot-avatar.png" alt="ChatBot" />
-              <AvatarFallback>AI</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <p className="text-sm text-muted-foreground mb-1">Assistant</p>
-              <p className="text-sm">
-                Thinking<ThinkingDots />
-              </p>
             </div>
           </div>
         )}
