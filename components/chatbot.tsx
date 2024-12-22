@@ -83,6 +83,12 @@ export function ChatBot({
       )
     );
 
+    // Generate name from first user message
+    if (currentConversation.messages.length === 2) {
+      const name = await generateConversationName([userMessage]);
+      updateConversationName(currentConversation.id, name);
+    }
+
     // Set loading immediately
     setIsLoading(true);
 
@@ -111,7 +117,6 @@ export function ChatBot({
         while (true) {
           const { done, value } = await reader.read();
           if (done) {
-            console.log('Stream complete. Final message:', assistantMessage);
             break;
           }
 
@@ -139,12 +144,6 @@ export function ChatBot({
       } catch (error) {
         console.error('Streaming error:', error);
       }
-
-      // Generate name after first exchange
-      if (currentConversation.messages.length === 1) {
-        const name = await generateConversationName([...currentConversation.messages, assistantMessage]);
-        updateConversationName(currentConversation.id, name);
-      }
     } catch (error) {
       console.error('Error:', error);
       setConversations((prev) =>
@@ -169,53 +168,36 @@ export function ChatBot({
     }
   };
 
+ 
   const generateConversationName = async (messages: Message[]) => {
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch('/api/chat-completion', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           messages: [
-            ...messages,
             {
-              role: 'user',
-              content:
-                'Based on our conversation so far, suggest a very short (2-4 words) title for this chat. Respond with ONLY the title, no explanation or quotes.',
+              role: 'system',
+              content: 'Generate a very short (2-4 words) title for this chat based on the user message. Respond with ONLY the title, no explanation or quotes.'
             },
+            messages[0], // Only use the first message
           ],
         }),
       });
 
       if (!response.ok) throw new Error('Failed to generate name');
+      if (!response.body) throw new Error('No response body');
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response body');
-
-      let title = '';
+      const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
+      let title = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') break;
-            try {
-              const json = JSON.parse(data);
-              const content = json.choices[0]?.delta?.content || '';
-              title += content;
-            } catch (e) {
-              console.error('Error parsing JSON:', e);
-            }
-          }
-        }
+        title += decoder.decode(value);
       }
 
       return title.trim() || 'New Chat';
