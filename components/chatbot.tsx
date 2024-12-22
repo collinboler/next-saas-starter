@@ -2,12 +2,11 @@
 'use client';
 
 import React from 'react';
-import { Paperclip, Send, Trash2, ChevronDown } from 'lucide-react';
+import { Paperclip, Send, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Message, Conversation } from 'app/types/chat';
-import { cn } from '@/lib/utils';
 
 interface ChatBotProps {
   activeConversation: string | null;
@@ -56,52 +55,6 @@ export function ChatBot({
     scrollToBottom();
   }, [conversations]);
 
-  const generateConversationName = async (messages: Message[]) => {
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [
-            ...messages,
-            {
-              role: 'user',
-              content:
-                'Based on our conversation so far, suggest a very short (2-4 words) title for this chat. Respond with ONLY the title, no explanation or quotes.',
-            },
-          ],
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to generate name');
-
-      const data = await response.json();
-      return data.choices[0].message.content.trim();
-    } catch (error) {
-      console.error('Error generating name:', error);
-      return 'New Chat';
-    }
-  };
-
-  const createNewChat = (initialMessage: string) => {
-    const newConversation: Conversation = {
-      id: Date.now().toString(),
-      name: 'New Chat',
-      messages: [],
-    };
-    setConversations((prev) => [newConversation, ...prev]);
-    setActiveConversation(newConversation.id);
-    return newConversation;
-  };
-
-  const updateConversationName = (id: string, name: string) => {
-    setConversations((prevConversations) =>
-      prevConversations.map((conv) => (conv.id === id ? { ...conv, name } : conv))
-    );
-  };
-
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim()) return;
@@ -140,7 +93,7 @@ export function ChatBot({
             {
               role: 'system',
               content:
-                'You are a helpful assistant for our SaaS product. Provide concise and friendly responses.',
+                `This user's name is Collin. Please be friendly and helpful.`,
             },
             ...currentConversation.messages,
             userMessage,
@@ -149,30 +102,63 @@ export function ChatBot({
       });
 
       if (!response.ok) throw new Error('Failed to get response');
+      if (!response.body) throw new Error('No response body');
 
-      const data = await response.json();
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: data.choices[0].message.content,
-      };
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let assistantMessage: Message = { role: 'assistant', content: '' };
 
+      console.log('Starting stream...');
+
+      // Add empty assistant message to conversation immediately
       setConversations((prev) =>
-        prev.map((conv) => {
-          if (conv.id === currentConversation.id) {
-            const updatedMessages = [...conv.messages, assistantMessage];
-
-            // Generate name after first exchange
-            if (updatedMessages.length === 2) {
-              generateConversationName(updatedMessages).then((name) => {
-                updateConversationName(conv.id, name);
-              });
-            }
-
-            return { ...conv, messages: updatedMessages };
-          }
-          return conv;
-        })
+        prev.map((conv) =>
+          conv.id === currentConversation.id
+            ? {
+                ...conv,
+                messages: [...conv.messages, assistantMessage],
+              }
+            : conv
+        )
       );
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            console.log('Stream complete. Final message:', assistantMessage);
+            break;
+          }
+
+          const chunk = decoder.decode(value);
+          assistantMessage = {
+            role: 'assistant',
+            content: assistantMessage.content + chunk
+          };
+
+          setConversations((prev) =>
+            prev.map((conv) =>
+              conv.id === currentConversation.id
+                ? {
+                    ...conv,
+                    messages: conv.messages.map((msg, i) => 
+                      i === conv.messages.length - 1 ? assistantMessage : msg
+                    ),
+                  }
+                : conv
+            )
+          );
+        }
+      } catch (error) {
+        console.error('Streaming error:', error);
+      }
+
+      // Generate name after first exchange
+      if (currentConversation.messages.length === 1) {
+        generateConversationName([...currentConversation.messages, assistantMessage]).then((name) => {
+          updateConversationName(currentConversation.id, name);
+        });
+      }
     } catch (error) {
       console.error('Error:', error);
       setConversations((prev) =>
@@ -195,6 +181,79 @@ export function ChatBot({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const generateConversationName = async (messages: Message[]) => {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [
+            ...messages,
+            {
+              role: 'user',
+              content:
+                'Based on our conversation so far, suggest a very short (2-4 words) title for this chat. Respond with ONLY the title, no explanation or quotes.',
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to generate name');
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response body');
+
+      let title = '';
+      const decoder = new TextDecoder('utf-8');
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') break;
+            try {
+              const json = JSON.parse(data);
+              const content = json.choices[0]?.delta?.content || '';
+              title += content;
+            } catch (e) {
+              console.error('Error parsing JSON:', e);
+            }
+          }
+        }
+      }
+
+      return title.trim() || 'New Chat';
+    } catch (error) {
+      console.error('Error generating name:', error);
+      return 'New Chat';
+    }
+  };
+
+  const createNewChat = (initialMessage: string) => {
+    const newConversation: Conversation = {
+      id: Date.now().toString(),
+      name: 'New Chat',
+      messages: [],
+    };
+    setConversations((prev) => [newConversation, ...prev]);
+    setActiveConversation(newConversation.id);
+    return newConversation;
+  };
+
+  const updateConversationName = (id: string, name: string) => {
+    setConversations((prevConversations) =>
+      prevConversations.map((conv) => (conv.id === id ? { ...conv, name } : conv))
+    );
   };
 
   const handleDeleteMessage = (index: number) => {
@@ -240,7 +299,7 @@ export function ChatBot({
                 <p className="text-sm text-muted-foreground mb-1">
                   {message.role === 'user' ? 'You' : 'Assistant'}
                 </p>
-                <p className="text-sm">{message.content}</p>
+                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
               </div>
               <Button
                 variant="ghost"
