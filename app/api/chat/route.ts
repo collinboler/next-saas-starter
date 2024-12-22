@@ -18,74 +18,47 @@ export async function POST(req: NextRequest) {
 
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
-      defaultHeaders: {
-        'OpenAI-Beta': 'assistants=v2'
-      }
     });
 
-    // Create a thread with fetch directly (Edge compatible)
-    const threadResponse = await fetch('https://api.openai.com/v1/threads', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2',
-        'Content-Type': 'application/json'
-      }
-    });
-    const thread = await threadResponse.json();
+    // Create a thread
+    const thread = await openai.beta.threads.create();
 
     // Add message to thread
-    await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        role: 'user',
-        content: messages[messages.length - 1].content
-      })
+    await openai.beta.threads.messages.create(thread.id, {
+      role: 'user',
+      content: messages[messages.length - 1].content
     });
 
     // Create run
-    const runResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        assistant_id: process.env.OPENAI_ASSISTANT_ID
-      })
+    const run = await openai.beta.threads.runs.create(thread.id, {
+      assistant_id: process.env.OPENAI_ASSISTANT_ID
     });
-    const run = await runResponse.json();
 
     // Create stream
     const stream = new ReadableStream({
       async start(controller) {
         try {
           while (true) {
-            const statusResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs/${run.id}`, {
-              headers: {
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-                'OpenAI-Beta': 'assistants=v2'
-              }
-            });
-            const runStatus = await statusResponse.json();
+            const runStatus = await openai.beta.threads.runs.retrieve(
+              thread.id,
+              run.id
+            );
 
             if (runStatus.status === 'completed') {
-              const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
-                headers: {
-                  'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-                  'OpenAI-Beta': 'assistants=v2'
-                }
-              });
-              const messages = await messagesResponse.json();
+              const messages = await openai.beta.threads.messages.list(thread.id);
               const lastMessage = messages.data[0];
+              
               if (lastMessage.content[0].type === 'text') {
-                controller.enqueue(lastMessage.content[0].text.value);
+                const text = lastMessage.content[0].text.value;
+                // Stream the response chunk by chunk
+                const encoder = new TextEncoder();
+                const chunks = text.match(/.{1,4}/g) || [];
+                
+                for (const chunk of chunks) {
+                  controller.enqueue(encoder.encode(chunk));
+                  // Add a small delay between chunks
+                  await new Promise(resolve => setTimeout(resolve, 20));
+                }
               }
               break;
             } else if (
@@ -103,14 +76,14 @@ export async function POST(req: NextRequest) {
         } catch (error) {
           controller.error(error);
         }
-      },
+      }
     });
 
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/plain',
         'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
+        'Connection': 'keep-alive',
       },
     });
   } catch (error) {

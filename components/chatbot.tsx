@@ -93,43 +93,91 @@ export function ChatBot({
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get response');
-      }
+      if (!response.ok) throw new Error('Failed to get response');
+      if (!response.body) throw new Error('No response body');
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response body');
-      }
-
+      const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let assistantMessage: Message = { role: 'assistant', content: '' };
-      currentConversation.messages.push(assistantMessage);
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      console.log('Starting stream...');
 
-        const text = decoder.decode(value);
-        assistantMessage.content += text;
+      // Add empty assistant message to conversation immediately
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === currentConversation.id
+            ? {
+                ...conv,
+                messages: [...conv.messages, assistantMessage],
+              }
+            : conv
+        )
+      );
 
-        setConversations(prev =>
-          prev.map(conv =>
-            conv.id === currentConversation.id
-              ? {
-                  ...conv,
-                  messages: conv.messages.map((msg, i) =>
-                    i === conv.messages.length - 1 ? assistantMessage : msg
-                  ),
-                }
-              : conv
-          )
-        );
+      let firstChunkReceived = false;
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            console.log('Stream complete. Final message:', assistantMessage);
+            break;
+          }
+
+          const text = decoder.decode(value);
+          if (!firstChunkReceived) {
+            setIsLoading(false);
+            firstChunkReceived = true;
+          }
+
+          assistantMessage = {
+            role: 'assistant',
+            content: assistantMessage.content + text
+          };
+          
+          setConversations((prev) =>
+            prev.map((conv) =>
+              conv.id === currentConversation.id
+                ? {
+                    ...conv,
+                    messages: conv.messages.map((msg, i) => 
+                      i === conv.messages.length - 1 ? assistantMessage : msg
+                    ),
+                  }
+                : conv
+            )
+          );
+        }
+      } catch (error) {
+        console.error('Streaming error:', error);
+      }
+
+      // Generate name after first exchange
+      if (currentConversation.messages.length === 1) {
+        const name = await generateConversationName([...currentConversation.messages, assistantMessage]);
+        updateConversationName(currentConversation.id, name);
       }
     } catch (error) {
-      console.error('Chat error:', error);
-      // Add error handling UI feedback here
+      console.error('Error:', error);
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.id === currentConversation.id) {
+            return {
+              ...conv,
+              messages: [
+                ...conv.messages,
+                {
+                  role: 'assistant',
+                  content: 'Sorry, I encountered an error. Please try again.',
+                },
+              ],
+            };
+          }
+          return conv;
+        })
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
