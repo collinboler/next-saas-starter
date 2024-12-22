@@ -67,6 +67,7 @@ function formatAction(action: ActivityType): string {
       return 'Unknown action occurred';
   }
 }
+// new commit lol
 
 export default async function ActivityPage() {
   const logs = await getActivityLogs();
