@@ -63,24 +63,24 @@ export function ChatBot({
     if (!activeConversation) {
       currentConversation = createNewChat(input);
     } else {
-      currentConversation =
-        conversations.find((conv) => conv.id === activeConversation) ||
-        createNewChat(input);
+      const existingConversation = conversations.find(conv => conv.id === activeConversation);
+      if (!existingConversation) {
+        currentConversation = createNewChat(input);
+      } else {
+        currentConversation = { ...existingConversation };
+      }
     }
 
     const userMessage: Message = { role: 'user', content: input };
-
-    setConversations((prev) =>
-      prev.map((conv) => {
-        if (conv.id === currentConversation.id) {
-          return { ...conv, messages: [...conv.messages, userMessage] };
-        }
-        return conv;
-      })
-    );
-
     setInput('');
-    setIsLoading(true);
+
+    // Update conversation with user message
+    currentConversation.messages.push(userMessage);
+    setConversations(prev => 
+      prev.map(conv => 
+        conv.id === currentConversation.id ? currentConversation : conv
+      )
+    );
 
     try {
       const response = await fetch('/api/chat', {
@@ -89,104 +89,47 @@ export function ChatBot({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: [
-            {
-              role: 'system',
-              content:
-                `This user's name is Collin. Please be friendly and helpful.`,
-            },
-            ...currentConversation.messages,
-            userMessage,
-          ],
+          messages: currentConversation.messages,
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to get response');
-      if (!response.body) throw new Error('No response body');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to get response');
+      }
 
-      const reader = response.body.getReader();
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
       const decoder = new TextDecoder('utf-8');
       let assistantMessage: Message = { role: 'assistant', content: '' };
+      currentConversation.messages.push(assistantMessage);
 
-      console.log('Starting stream...');
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      // Add empty assistant message to conversation immediately
-      setConversations((prev) =>
-        prev.map((conv) =>
-          conv.id === currentConversation.id
-            ? {
-                ...conv,
-                messages: [...conv.messages, assistantMessage],
-              }
-            : conv
-        )
-      );
+        const text = decoder.decode(value);
+        assistantMessage.content += text;
 
-      let firstChunkReceived = false;
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            console.log('Stream complete. Final message:', assistantMessage);
-            break;
-          }
-
-          const chunk = decoder.decode(value);
-          if (!firstChunkReceived) {
-            setIsLoading(false);
-            firstChunkReceived = true;
-          }
-
-          assistantMessage = {
-            role: 'assistant',
-            content: assistantMessage.content + chunk
-          };
-
-          setConversations((prev) =>
-            prev.map((conv) =>
-              conv.id === currentConversation.id
-                ? {
-                    ...conv,
-                    messages: conv.messages.map((msg, i) => 
-                      i === conv.messages.length - 1 ? assistantMessage : msg
-                    ),
-                  }
-                : conv
-            )
-          );
-        }
-      } catch (error) {
-        console.error('Streaming error:', error);
-      }
-
-      // Generate name after first exchange
-      if (currentConversation.messages.length === 1) {
-        generateConversationName([...currentConversation.messages, assistantMessage]).then((name) => {
-          updateConversationName(currentConversation.id, name);
-        });
+        setConversations(prev =>
+          prev.map(conv =>
+            conv.id === currentConversation.id
+              ? {
+                  ...conv,
+                  messages: conv.messages.map((msg, i) =>
+                    i === conv.messages.length - 1 ? assistantMessage : msg
+                  ),
+                }
+              : conv
+          )
+        );
       }
     } catch (error) {
-      console.error('Error:', error);
-      setConversations((prev) =>
-        prev.map((conv) => {
-          if (conv.id === currentConversation.id) {
-            return {
-              ...conv,
-              messages: [
-                ...conv.messages,
-                {
-                  role: 'assistant',
-                  content: 'Sorry, I encountered an error. Please try again.',
-                },
-              ],
-            };
-          }
-          return conv;
-        })
-      );
-    } finally {
-      setIsLoading(false);
+      console.error('Chat error:', error);
+      // Add error handling UI feedback here
     }
   };
 
