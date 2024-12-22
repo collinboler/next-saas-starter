@@ -83,16 +83,17 @@ export function ChatBot({
       )
     );
 
-    // Generate name from first user message
-    if (currentConversation.messages.length === 2) {
-      const name = await generateConversationName([userMessage]);
-      updateConversationName(currentConversation.id, name);
-    }
-
-    // Set loading immediately
+    // Set loading immediately to show "Thinking..."
     setIsLoading(true);
 
     try {
+      // Generate name from first user message in parallel
+      if (currentConversation.messages.length === 2) {
+        generateConversationName([userMessage]).then(name => {
+          updateConversationName(currentConversation.id, name);
+        });
+      }
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
