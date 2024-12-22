@@ -122,6 +122,8 @@ export function ChatBot({
         )
       );
 
+      let firstChunkReceived = false;
+
       try {
         while (true) {
           const { done, value } = await reader.read();
@@ -131,6 +133,11 @@ export function ChatBot({
           }
 
           const chunk = decoder.decode(value);
+          if (!firstChunkReceived) {
+            setIsLoading(false);
+            firstChunkReceived = true;
+          }
+
           assistantMessage = {
             role: 'assistant',
             content: assistantMessage.content + chunk
