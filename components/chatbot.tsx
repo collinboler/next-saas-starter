@@ -73,15 +73,18 @@ export function ChatBot({
 
     const userMessage: Message = { role: 'user', content: input };
     setInput('');
-    setIsLoading(true);
 
-    // Update conversation with user message
-    currentConversation.messages.push(userMessage);
+    // Update conversation with user message and empty assistant message
+    const assistantMessage: Message = { role: 'assistant', content: '' };
+    currentConversation.messages.push(userMessage, assistantMessage);
     setConversations(prev => 
       prev.map(conv => 
         conv.id === currentConversation.id ? currentConversation : conv
       )
     );
+
+    // Set loading immediately
+    setIsLoading(true);
 
     try {
       const response = await fetch('/api/chat', {
@@ -90,7 +93,7 @@ export function ChatBot({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: currentConversation.messages,
+          messages: currentConversation.messages.slice(0, -1), // Exclude empty assistant message
         }),
       });
 
@@ -99,21 +102,8 @@ export function ChatBot({
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
-      let assistantMessage: Message = { role: 'assistant', content: '' };
 
       console.log('Starting stream...');
-
-      // Add empty assistant message to conversation immediately
-      setConversations((prev) =>
-        prev.map((conv) =>
-          conv.id === currentConversation.id
-            ? {
-                ...conv,
-                messages: [...conv.messages, assistantMessage],
-              }
-            : conv
-        )
-      );
 
       let firstChunkReceived = false;
 
@@ -131,18 +121,15 @@ export function ChatBot({
             firstChunkReceived = true;
           }
 
-          assistantMessage = {
-            role: 'assistant',
-            content: assistantMessage.content + text
-          };
-          
           setConversations((prev) =>
             prev.map((conv) =>
               conv.id === currentConversation.id
                 ? {
                     ...conv,
                     messages: conv.messages.map((msg, i) => 
-                      i === conv.messages.length - 1 ? assistantMessage : msg
+                      i === conv.messages.length - 1 
+                        ? { ...msg, content: msg.content + text }
+                        : msg
                     ),
                   }
                 : conv
