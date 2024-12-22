@@ -18,7 +18,12 @@ export async function GET(req: NextRequest) {
     
     return new Response(JSON.stringify(messages.data.map(msg => ({
       role: msg.role,
-      content: msg.content[0].type === 'text' ? msg.content[0].text.value : ''
+      content: msg.content[0].type === 'text' 
+        ? msg.content[0].text.value
+            .replace(/\\n/g, '\n')  // Replace escaped newlines
+            .replace(/\n/g, '\n')   // Replace literal newlines
+            .replace(/\r\n/g, '\n') // Replace Windows-style newlines
+        : ''
     }))), {
       headers: {
         'Content-Type': 'application/json'

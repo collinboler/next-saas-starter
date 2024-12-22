@@ -36,6 +36,60 @@ const ThinkingDots = () => {
   );
 };
 
+const parseMarkdownFormatting = (text: string): React.ReactNode[] => {
+  const parts: React.ReactNode[] = [];
+  let currentText = '';
+  let i = 0;
+
+  while (i < text.length) {
+    if (text[i] === '*') {
+      // Handle bold (**) and italic (*)
+      if (text[i + 1] === '*') {
+        // Bold text
+        if (currentText) {
+          parts.push(currentText);
+          currentText = '';
+        }
+        i += 2;
+        let boldText = '';
+        while (i < text.length && !(text[i] === '*' && text[i + 1] === '*')) {
+          boldText += text[i];
+          i++;
+        }
+        if (boldText) {
+          parts.push(<strong key={`bold-${i}`}>{boldText}</strong>);
+        }
+        i += 2;
+      } else {
+        // Italic text
+        if (currentText) {
+          parts.push(currentText);
+          currentText = '';
+        }
+        i++;
+        let italicText = '';
+        while (i < text.length && text[i] !== '*') {
+          italicText += text[i];
+          i++;
+        }
+        if (italicText) {
+          parts.push(<em key={`italic-${i}`}>{italicText}</em>);
+        }
+        i++;
+      }
+    } else {
+      currentText += text[i];
+      i++;
+    }
+  }
+
+  if (currentText) {
+    parts.push(currentText);
+  }
+
+  return parts;
+};
+
 export function ChatBot({
   activeConversation,
   conversations,
@@ -268,13 +322,13 @@ export function ChatBot({
                 <p className="text-sm text-muted-foreground mb-1">
                   {message.role === 'user' ? 'You' : 'Assistant'}
                 </p>
-                <p className="text-sm whitespace-pre-wrap">
+                <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
                   {message.role === 'assistant' && message.content === '' && isLoading ? (
                     <span>
                       Thinking<ThinkingDots />
                     </span>
                   ) : (
-                    message.content
+                    parseMarkdownFormatting(message.content)
                   )}
                 </p>
               </div>
