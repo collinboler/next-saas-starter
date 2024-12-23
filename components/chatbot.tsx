@@ -132,11 +132,19 @@ export function ChatBot({
       }
     }
 
-    const userMessage: Message = { role: 'user', content: input };
+    const userMessage: Message = { 
+      role: 'user', 
+      content: input,
+      timestamp: new Date().toISOString()
+    };
     setInput('');
 
     // Update conversation with user message and empty assistant message
-    const assistantMessage: Message = { role: 'assistant', content: '' };
+    const assistantMessage: Message = { 
+      role: 'assistant', 
+      content: '',
+      timestamp: new Date().toISOString()
+    };
     currentConversation.messages.push(userMessage, assistantMessage);
     setConversations(prev => 
       prev.map(conv => 
@@ -209,7 +217,11 @@ export function ChatBot({
                     ...conv,
                     messages: conv.messages.map((msg, i) => 
                       i === conv.messages.length - 1 
-                        ? { ...msg, content: msg.content + text }
+                        ? { 
+                            ...msg, 
+                            content: msg.content + text,
+                            timestamp: msg.timestamp || new Date().toISOString()
+                          }
                         : msg
                     ),
                   }
@@ -232,6 +244,7 @@ export function ChatBot({
                 {
                   role: 'assistant',
                   content: 'Sorry, I encountered an error. Please try again.',
+                  timestamp: new Date().toISOString()
                 },
               ],
             };
@@ -244,7 +257,6 @@ export function ChatBot({
     }
   };
 
- 
   const generateConversationName = async (messages: Message[]) => {
     try {
       const response = await fetch('/api/chat-completion', {
@@ -341,8 +353,11 @@ export function ChatBot({
                 </Avatar>
               )}
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground mb-1">
-                  {message.role === 'user' ? 'You' : 'Assistant'}
+                <p className="text-sm text-muted-foreground mb-1 flex justify-between items-center">
+                  <span>{message.role === 'user' ? 'You' : 'Assistant'}</span>
+                  <span className="text-xs">
+                    {new Date(message.timestamp).toLocaleTimeString()}
+                  </span>
                 </p>
                 <div className="text-sm space-y-4">
                   {message.role === 'assistant' && message.content === '' && isLoading ? (
