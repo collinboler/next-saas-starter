@@ -6,7 +6,14 @@ import { Paperclip, Send, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Message, Conversation } from 'app/types/chat';
+import { Message } from 'app/types/chat';
+
+interface Conversation {
+  id: string;
+  name: string;
+  messages: Message[];
+  threadId?: string;
+}
 
 interface ChatBotProps {
   activeConversation: string | null;
@@ -155,10 +162,24 @@ export function ChatBot({
         },
         body: JSON.stringify({
           messages: currentConversation.messages.slice(0, -1), // Exclude empty assistant message
+          threadId: currentConversation.threadId
         }),
       });
 
       if (!response.ok) throw new Error('Failed to get response');
+      
+      // Get thread ID from response headers
+      const threadId = response.headers.get('x-thread-id');
+      if (threadId && !currentConversation.threadId) {
+        setConversations(prev =>
+          prev.map(conv =>
+            conv.id === currentConversation.id
+              ? { ...conv, threadId }
+              : conv
+          )
+        );
+      }
+
       if (!response.body) throw new Error('No response body');
 
       const reader = response.body.getReader();
@@ -207,7 +228,7 @@ export function ChatBot({
             return {
               ...conv,
               messages: [
-                ...conv.messages,
+                ...conv.messages.slice(0, -1), // Remove the empty assistant message
                 {
                   role: 'assistant',
                   content: 'Sorry, I encountered an error. Please try again.',
@@ -267,6 +288,7 @@ export function ChatBot({
       id: Date.now().toString(),
       name: 'New Chat',
       messages: [],
+      threadId: undefined
     };
     setConversations((prev) => [newConversation, ...prev]);
     setActiveConversation(newConversation.id);
@@ -322,15 +344,19 @@ export function ChatBot({
                 <p className="text-sm text-muted-foreground mb-1">
                   {message.role === 'user' ? 'You' : 'Assistant'}
                 </p>
-                <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                <div className="text-sm space-y-4">
                   {message.role === 'assistant' && message.content === '' && isLoading ? (
                     <span>
                       Thinking<ThinkingDots />
                     </span>
                   ) : (
-                    parseMarkdownFormatting(message.content)
+                    message.content.split('`\n`').map((paragraph, idx) => (
+                      <p key={idx} className="whitespace-pre-wrap break-words leading-relaxed">
+                        {parseMarkdownFormatting(paragraph)}
+                      </p>
+                    ))
                   )}
-                </p>
+                </div>
               </div>
               <Button
                 variant="ghost"

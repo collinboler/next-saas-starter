@@ -6,7 +6,7 @@ export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages } = await req.json();
+    const { messages, threadId } = await req.json();
     
     if (!process.env.OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY is not set');
@@ -20,8 +20,10 @@ export async function POST(req: NextRequest) {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Create a thread
-    const thread = await openai.beta.threads.create();
+    // Use existing thread or create a new one
+    const thread = threadId 
+      ? { id: threadId }
+      : await openai.beta.threads.create();
 
     // Add message to thread
     await openai.beta.threads.messages.create(thread.id, {
@@ -38,8 +40,6 @@ export async function POST(req: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          let responseStarted = false;
-          
           while (true) {
             const runStatus = await openai.beta.threads.runs.retrieve(
               thread.id,
@@ -52,21 +52,7 @@ export async function POST(req: NextRequest) {
               
               if (lastMessage.content[0].type === 'text') {
                 const text = lastMessage.content[0].text.value;
-                
-                // Send an initial empty chunk to signal the start of the response
-                if (!responseStarted) {
-                  controller.enqueue(new TextEncoder().encode(''));
-                  responseStarted = true;
-                  // Add a delay to show the "Thinking..." state
-                  await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-
-                // Stream the response chunk by chunk
-                const chunks = text.match(/.{1,4}/g) || [];
-                for (const chunk of chunks) {
-                  controller.enqueue(new TextEncoder().encode(chunk));
-                  await new Promise(resolve => setTimeout(resolve, 20));
-                }
+                controller.enqueue(new TextEncoder().encode(text));
               }
               break;
             } else if (
@@ -87,13 +73,19 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    return new Response(stream, {
+    // Return the response with the thread ID in headers
+    const response = new Response(stream, {
       headers: {
         'Content-Type': 'text/plain',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
       },
     });
+    
+    // Add thread ID to response
+    response.headers.set('x-thread-id', thread.id);
+    
+    return response;
   } catch (error) {
     console.error('Error in /api/chat:', error);
     return new Response(
