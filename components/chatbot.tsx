@@ -143,7 +143,7 @@ export function ChatBot({
     const assistantMessage: Message = { 
       role: 'assistant', 
       content: '',
-      timestamp: new Date().toISOString()
+      timestamp: ''
     };
     currentConversation.messages.push(userMessage, assistantMessage);
     setConversations(prev => 
@@ -201,6 +201,24 @@ export function ChatBot({
         while (true) {
           const { done, value } = await reader.read();
           if (done) {
+            // Set the timestamp only when the response is complete
+            setConversations((prev) =>
+              prev.map((conv) =>
+                conv.id === currentConversation.id
+                  ? {
+                      ...conv,
+                      messages: conv.messages.map((msg, i) => 
+                        i === conv.messages.length - 1 
+                          ? { 
+                              ...msg, 
+                              timestamp: new Date().toISOString()
+                            }
+                          : msg
+                      ),
+                    }
+                  : conv
+              )
+            );
             break;
           }
 
@@ -220,7 +238,6 @@ export function ChatBot({
                         ? { 
                             ...msg, 
                             content: msg.content + text,
-                            timestamp: msg.timestamp || new Date().toISOString()
                           }
                         : msg
                     ),
@@ -356,7 +373,7 @@ export function ChatBot({
                 <p className="text-sm text-muted-foreground mb-1 flex justify-between items-center">
                   <span>{message.role === 'user' ? 'You' : 'Assistant'}</span>
                   <span className="text-xs">
-                    {new Date(message.timestamp).toLocaleTimeString()}
+                    {message.timestamp && new Date(message.timestamp).toLocaleTimeString()}
                   </span>
                 </p>
                 <div className="text-sm space-y-4">
