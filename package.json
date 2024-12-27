@@ -8,7 +8,9 @@
     "db:seed": "npx tsx lib/db/seed.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "npx tsx lib/db/migrate.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "install-py-deps": "pip install -r requirements.txt",
+    "scrape": "python scripts/trending_scraper.py"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.4",
