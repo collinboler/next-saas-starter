@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 import os
+from os import path
 
 # Headers to mimic a browser
 HEADERS = {
@@ -182,7 +183,7 @@ def write_to_file():
     Write all scraped data to a file named with today's date
     """
     date_str = datetime.now().strftime("%m-%d-%Y")
-    filename = f"{date_str}.txt"
+    filename = path.join(os.path.dirname(__file__), f"{date_str}.txt")
     
     # Collect all data
     creators_data = get_creators()
@@ -196,6 +197,8 @@ def write_to_file():
         f.write(keywords_data + "\n")
         f.write(hashtags_data + "\n")
         f.write(songs_data)
+    
+    print(f"File created: {filename}")  # Add logging
 
 if __name__ == "__main__":
     write_to_file() 
