@@ -14,9 +14,9 @@
   ],
   "routes": [
     {
-      "src": "/api/cron",
-      "methods": ["GET"],
-      "dest": "/api/cron"
+        "src": "/api/cron",
+        "methods": ["GET"],
+        "dest": "/api/cron/route.ts"
     }
   ]
 }
