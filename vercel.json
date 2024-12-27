@@ -2,7 +2,7 @@
   "buildCommand": "pip install -r requirements.txt",
   "builds": [
     {
-      "src": "app/**/*",
+      "src": "package.json",
       "use": "@vercel/next"
     }
   ],
@@ -10,13 +10,6 @@
     {
       "path": "/api/cron",
       "schedule": "0 0 * * *"
-    }
-  ],
-  "routes": [
-    {
-        "src": "/api/cron",
-        "methods": ["GET"],
-        "dest": "/api/cron/route.ts"
     }
   ]
 }
