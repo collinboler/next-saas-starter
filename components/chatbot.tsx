@@ -412,7 +412,7 @@ export function ChatBot({
                   <Input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Message ChatGPT..."
+                    placeholder="Message Content Coach..."
                     className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                     disabled={isLoading}
                   />
@@ -480,7 +480,7 @@ export function ChatBot({
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Message ChatGPT..."
+                placeholder="Message Content Coach..."
                 className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                 disabled={isLoading}
               />
