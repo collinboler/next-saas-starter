@@ -42,12 +42,18 @@ export async function POST(req: NextRequest) {
       }
 
       const perplexityAnswer = perplexityData.choices[0].message.content;
+      const citations = perplexityData.choices[0].message.citations || [];
 
       // Append Perplexity's response to the message for the OpenAI assistant
       const enhancedMessage = `
         User Question: ${messages[messages.length - 1].content}
+
         Perplexity's Analysis: ${perplexityAnswer}
-        Please provide your analysis and consider Perplexity's response above.
+
+        Citations:
+        ${citations.map((citation: { text: string }, index: number) => `[${index + 1}] ${citation.text || 'N/A'}`).join('\n')}
+
+        Please provide your analysis and consider Perplexity's response and citations above.
       `;
 
       const openai = new OpenAI({
