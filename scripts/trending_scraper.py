@@ -97,7 +97,7 @@ def get_creators():
         return creators
     
     if creators:
-        result = "Trending Creators in the US on " + datetime.now().strftime("%m/%d/%Y") + ":\n"
+        result = "Trending Creators in the US on " + datetime.utcnow().strftime("%m/%d/%Y") + ":\n"
         for index, creator in enumerate(creators, start=1):
             result += f"{index}. Username: {creator['username']}, Nickname: {creator['nickname']}\n"
         return result
@@ -180,9 +180,9 @@ def get_top_songs():
 
 def write_to_file():
     """
-    Write all scraped data to a file named with today's date
+    Write all scraped data to a file named with today's date (UTC)
     """
-    date_str = datetime.now().strftime("%m-%d-%Y")
+    date_str = datetime.utcnow().strftime("%m-%d-%Y")
     filename = path.join(os.path.dirname(__file__), f"{date_str}.txt")
     
     # Collect all data
