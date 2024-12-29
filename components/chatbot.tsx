@@ -44,6 +44,9 @@ const ThinkingDots = () => {
 };
 
 const parseMarkdownFormatting = (text: string): React.ReactNode[] => {
+  // First remove any text between 【】
+  text = text.replace(/【[^】]*】/g, '');
+  
   const parts: React.ReactNode[] = [];
   let currentText = '';
   let i = 0;

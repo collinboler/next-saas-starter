@@ -20,7 +20,15 @@ export async function POST(req: NextRequest) {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ messages: [messages[messages.length - 1]] })
+        body: JSON.stringify({
+          messages: [
+            {
+              role: "system",
+              content: "Give enough context that will help another assistant (who doesn't have access to the internet) enough information to properly assist the user. For context, the assistant specializes in creating viral video scripts for TikTok and other social Medias. Make sure the information is timely and the sources have been written within a day or two, this is crucial."
+            },
+            messages[messages.length - 1]
+          ]
+        })
       });
 
       if (!perplexityResponse.ok) {
@@ -53,7 +61,8 @@ export async function POST(req: NextRequest) {
         Citations:
         ${citations.map((citation: { text: string }, index: number) => `[${index + 1}] ${citation.text || 'N/A'}`).join('\n')}
 
-        Please provide your analysis and consider Perplexity's response and citations above.
+        Please provide your analysis and consider Perplexity's response and citations above, which give you the real time \
+        live data you need to properly assist the user.
       `;
 
       const openai = new OpenAI({

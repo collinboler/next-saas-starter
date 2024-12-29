@@ -182,23 +182,31 @@ def write_to_file():
     """
     Write all scraped data to a file named with today's date (UTC)
     """
+    # Delete latest txt file first
+    script_dir = os.path.dirname(__file__)
+    txt_files = [f for f in os.listdir(script_dir) if f.endswith('.txt')]
+    if txt_files:
+        latest_file = max(txt_files, key=lambda x: os.path.getmtime(os.path.join(script_dir, x)))
+        os.remove(os.path.join(script_dir, latest_file))
+        print(f"Deleted previous file: {latest_file}")
+
+    # Create new file
     date_str = datetime.utcnow().strftime("%m-%d-%Y")
-    filename = path.join(os.path.dirname(__file__), f"{date_str}.txt")
+    filename = path.join(script_dir, f"{date_str}.txt")
     
-    # Collect all data
+    # Collect and write data
     creators_data = get_creators()
     keywords_data = get_trending_keywords()
     hashtags_data = get_trending_hashtags()
     songs_data = get_top_songs()
     
-    # Write to file
     with open(filename, 'w', encoding='utf-8') as f:
         f.write(creators_data + "\n\n")
         f.write(keywords_data + "\n")
         f.write(hashtags_data + "\n")
         f.write(songs_data)
     
-    print(f"File created: {filename}")  # Add log ging yes
+    print(f"File created: {filename}")
 
 if __name__ == "__main__":
     write_to_file() 
