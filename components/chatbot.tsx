@@ -22,6 +22,8 @@ interface ChatBotProps {
   setActiveConversation: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
+type ChatMode = 'content_coach' | 'script_generator' | 'account_analysis' | null;
+
 const initialSuggestions = [
   'Give me a viral video idea',
   'What topics are trending on TikTok?'
@@ -109,6 +111,7 @@ export function ChatBot({
   const [input, setInput] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const [showAllSuggestions, setShowAllSuggestions] = React.useState(false);
+  const [selectedMode, setSelectedMode] = React.useState<ChatMode>(null);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -352,9 +355,72 @@ export function ChatBot({
     setInput(suggestion);
   };
 
+  const handleModeSelect = (mode: ChatMode) => {
+    setSelectedMode(mode);
+    if (mode === 'content_coach') {
+      const newConversation: Conversation = {
+        id: Date.now().toString(),
+        name: 'New Chat',
+        messages: [],
+        threadId: undefined
+      };
+      setConversations((prev) => [newConversation, ...prev]);
+      setActiveConversation(null);
+    }
+  };
+
   const currentConversation = activeConversation
     ? conversations.find((conv) => conv.id === activeConversation)
     : null;
+
+  const getPlaceholderText = () => {
+    switch (selectedMode) {
+      case 'account_analysis':
+        return "Message Account Analyzer...";
+      case 'script_generator':
+        return "Message Script Generator...";
+      case 'content_coach':
+        return "Message Content Coach...";
+      default:
+        return "Type a message...";
+    }
+  };
+
+  // If no mode is selected, show the mode selection screen
+  if (!selectedMode && !currentConversation) {
+    return (
+      <div className="flex h-[calc(100vh-12rem)] flex-col">
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex flex-col items-center justify-center h-full">
+            <h1 className="mb-8 text-4xl font-bold">Choose Your Assistant</h1>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+              <div 
+                onClick={() => handleModeSelect('account_analysis')}
+                className="border rounded-lg p-6 hover:border-primary cursor-pointer transition-all"
+              >
+                <h2 className="text-2xl font-semibold mb-2">Account Analysis</h2>
+                <p className="text-muted-foreground">Analyze your TikTok account performance and get insights</p>
+              </div>
+              <div 
+                onClick={() => handleModeSelect('script_generator')}
+                className="border rounded-lg p-6 hover:border-primary cursor-pointer transition-all"
+              >
+                <h2 className="text-2xl font-semibold mb-2">Script Generator</h2>
+                <p className="text-muted-foreground">Generate engaging scripts for your TikTok videos</p>
+              </div>
+              <div 
+                onClick={() => handleModeSelect('content_coach')}
+                className="border rounded-lg p-6 hover:border-primary cursor-pointer transition-all"
+              >
+                <h2 className="text-2xl font-semibold mb-2">Content Coach</h2>
+                <p className="text-muted-foreground">Get personalized coaching and content strategy advice</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-[calc(100vh-12rem)] flex-col">
@@ -405,7 +471,11 @@ export function ChatBot({
           ))
         ) : (
           <div className="flex flex-col items-center justify-center h-full">
-            <h1 className="mb-8 text-4xl font-bold">What can I help with?</h1>
+            <h1 className="mb-8 text-4xl font-bold">
+              {selectedMode === 'account_analysis' && "Account Analysis"}
+              {selectedMode === 'script_generator' && "Script Generator"}
+              {selectedMode === 'content_coach' && "What can I help with?"}
+            </h1>
             <div className="w-full max-w-2xl">
               <div className="border rounded-lg bg-background">
                 <form onSubmit={handleSubmit} className="flex space-x-2 p-4">
@@ -415,7 +485,7 @@ export function ChatBot({
                   <Input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Message Content Coach..."
+                    placeholder={selectedMode === 'content_coach' ? "Message Content Coach..." : getPlaceholderText()}
                     className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                     disabled={isLoading}
                   />
@@ -425,34 +495,11 @@ export function ChatBot({
                 </form>
               </div>
               
-              <div className="mt-4">
-                <div className="flex flex-col gap-2">
-                  <div className="flex justify-center gap-2 overflow-x-auto pb-2">
-                    {initialSuggestions.map((suggestion, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleSuggestionClick(suggestion)}
-                        className="shrink-0 text-base"
-                      >
-                        {suggestion}
-                      </Button>
-                    ))}
-                    {!showAllSuggestions && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowAllSuggestions(true)}
-                        className="shrink-0 text-base"
-                      >
-                        More
-                      </Button>
-                    )}
-                  </div>
-                  {showAllSuggestions && (
-                    <div className="flex gap-2 overflow-x-auto pb-2">
-                      {moreSuggestions.map((suggestion, index) => (
+              {selectedMode === 'content_coach' && (
+                <div className="mt-4">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-center gap-2 overflow-x-auto pb-2">
+                      {initialSuggestions.map((suggestion, index) => (
                         <Button
                           key={index}
                           variant="outline"
@@ -463,10 +510,35 @@ export function ChatBot({
                           {suggestion}
                         </Button>
                       ))}
+                      {!showAllSuggestions && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowAllSuggestions(true)}
+                          className="shrink-0 text-base"
+                        >
+                          More
+                        </Button>
+                      )}
                     </div>
-                  )}
+                    {showAllSuggestions && (
+                      <div className="flex gap-2 overflow-x-auto pb-2">
+                        {moreSuggestions.map((suggestion, index) => (
+                          <Button
+                            key={index}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSuggestionClick(suggestion)}
+                            className="shrink-0 text-base"
+                          >
+                            {suggestion}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         )}
@@ -483,7 +555,7 @@ export function ChatBot({
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Message Content Coach..."
+                placeholder={selectedMode === 'content_coach' ? "Message Content Coach..." : getPlaceholderText()}
                 className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                 disabled={isLoading}
               />
