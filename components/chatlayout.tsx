@@ -6,7 +6,7 @@ import { Menu, Plus, Search, MoreHorizontal, Trash, Pencil } from 'lucide-react'
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Conversation } from 'app/types/chat';
+import { Conversation, ChatMode } from 'app/types/chat';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +32,8 @@ interface ChatLayoutProps {
   setConversations: React.Dispatch<React.SetStateAction<Conversation[]>>;
   activeConversation: string | null;
   setActiveConversation: React.Dispatch<React.SetStateAction<string | null>>;
+  selectedMode: ChatMode;
+  setSelectedMode: React.Dispatch<React.SetStateAction<ChatMode>>;
 }
 
 export function ChatLayout({
@@ -40,6 +42,8 @@ export function ChatLayout({
   setConversations,
   activeConversation,
   setActiveConversation,
+  selectedMode,
+  setSelectedMode,
 }: ChatLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,6 +52,7 @@ export function ChatLayout({
 
   const createNewChat = () => {
     setActiveConversation(null);
+    setSelectedMode(null);
   };
 
   const deleteConversation = (id: string) => {

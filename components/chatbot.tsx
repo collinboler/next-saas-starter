@@ -6,23 +6,16 @@ import { Paperclip, Send, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Message } from 'app/types/chat';
-
-interface Conversation {
-  id: string;
-  name: string;
-  messages: Message[];
-  threadId?: string;
-}
+import { Message, Conversation, ChatMode } from 'app/types/chat';
 
 interface ChatBotProps {
   activeConversation: string | null;
   conversations: Conversation[];
   setConversations: React.Dispatch<React.SetStateAction<Conversation[]>>;
   setActiveConversation: React.Dispatch<React.SetStateAction<string | null>>;
+  selectedMode: ChatMode;
+  setSelectedMode: React.Dispatch<React.SetStateAction<ChatMode>>;
 }
-
-type ChatMode = 'content_coach' | 'script_generator' | 'account_analysis' | null;
 
 const initialSuggestions = [
   'Give me a viral video idea',
@@ -107,11 +100,12 @@ export function ChatBot({
   conversations,
   setConversations,
   setActiveConversation,
+  selectedMode,
+  setSelectedMode,
 }: ChatBotProps) {
   const [input, setInput] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const [showAllSuggestions, setShowAllSuggestions] = React.useState(false);
-  const [selectedMode, setSelectedMode] = React.useState<ChatMode>(null);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -319,6 +313,7 @@ export function ChatBot({
   };
 
   const createNewChat = (initialMessage: string) => {
+    setSelectedMode(null);
     const newConversation: Conversation = {
       id: Date.now().toString(),
       name: 'New Chat',
@@ -326,7 +321,7 @@ export function ChatBot({
       threadId: undefined
     };
     setConversations((prev) => [newConversation, ...prev]);
-    setActiveConversation(newConversation.id);
+    setActiveConversation(null);
     return newConversation;
   };
 
