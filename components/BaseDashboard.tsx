@@ -1,28 +1,31 @@
 // app/components/BaseDashboard.tsx
 'use client';
 
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import React from 'react';
-import { ChatBot } from '@/components/chatbot';
-import { ChatLayout } from './chatlayout';
-import { Conversation } from 'app/types/chat';
+import { ContentCoach } from './ContentCoach';
+import { useSearchParams } from 'next/navigation';
 
 export default function BaseDashboard() {
-  const [conversations, setConversations] = React.useState<Conversation[]>([]);
-  const [activeConversation, setActiveConversation] = React.useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const view = searchParams.get('view');
+
+  if (view === 'content-coach') {
+    return <ContentCoach />;
+  }
 
   return (
-    <ChatLayout
-      conversations={conversations}
-      setConversations={setConversations}
-      activeConversation={activeConversation}
-      setActiveConversation={setActiveConversation}
-    >
-      <ChatBot
-        conversations={conversations}
-        setConversations={setConversations}
-        activeConversation={activeConversation}
-        setActiveConversation={setActiveConversation}
-      />
-    </ChatLayout>
+    <div className="flex gap-4 p-4">
+      <Link href="/script-generator">
+        <Button variant="outline">Script Generator</Button>
+      </Link>
+      <Link href="/tiktok">
+        <Button variant="outline">TikTok Analytics</Button>
+      </Link>
+      <Link href="/viralgo?view=content-coach">
+        <Button variant="outline">Content Coach</Button>
+      </Link>
+    </div>
   );
 }
