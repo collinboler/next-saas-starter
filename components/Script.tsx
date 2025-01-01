@@ -145,11 +145,8 @@ export function Script() {
                                                 type="button"
                                                 variant="outline"
                                                 size="sm"
-                                                onClick={() => {
-                                                    setScriptTopic(suggestion);
-                                                    handleNextStep();
-                                                }}
-                                                className="text-xs"
+                                                onClick={() => setScriptTopic(suggestion)}
+                                                className="text-xs hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                                             >
                                                 {suggestion}
                                             </Button>
