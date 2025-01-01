@@ -31,21 +31,21 @@ export default function BaseDashboard() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[50vh] gap-6 p-4">
       <Link href="/viralgo?view=script-generator">
-        <Button variant="outline" className="w-64 flex items-center gap-2">
-          <PenSquare className="w-5 h-5" />
+        <Button variant="outline" className="w-80 h-16 flex items-center gap-3 text-lg">
+          <PenSquare className="w-7 h-7" />
           Script Generator
         </Button>
       </Link>
-      <Link href="/viralgo?view=account-analysis">
-        <Button variant="outline" className="w-64 flex items-center gap-2">
-          <BarChart2 className="w-5 h-5" />
-          Account Analysis
+      <Link href="/viralgo?view=content-coach">
+        <Button variant="outline" className="w-80 h-16 flex items-center gap-3 text-lg">
+          <Brain className="w-7 h-7" />
+          Content Coach
         </Button>
       </Link>
-      <Link href="/viralgo?view=content-coach">
-        <Button variant="outline" className="w-64 flex items-center gap-2">
-          <Brain className="w-5 h-5" />
-          Content Coach
+      <Link href="/viralgo?view=account-analysis">
+        <Button variant="outline" className="w-80 h-16 flex items-center gap-3 text-lg">
+          <BarChart2 className="w-7 h-7" />
+          Account Analysis
         </Button>
       </Link>
     </div>
