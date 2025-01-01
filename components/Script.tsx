@@ -14,6 +14,11 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+interface TrendingTopic {
+    topic: string;
+    score: number;
+}
+
 export function Script() {
     const [currentStep, setCurrentStep] = useState(1);
     const [scriptTopic, setScriptTopic] = useState("");
@@ -22,7 +27,7 @@ export function Script() {
     const [loading, setLoading] = useState(false);
     const [generatedScript, setGeneratedScript] = useState("");
     const [visibleCount, setVisibleCount] = useState(3);
-    const [trendingSuggestions, setTrendingSuggestions] = useState<string[]>([]);
+    const [trendingSuggestions, setTrendingSuggestions] = useState<TrendingTopic[]>([]);
     const [loadingSuggestions, setLoadingSuggestions] = useState(true);
     const [remixInput, setRemixInput] = useState("");
 
@@ -49,6 +54,20 @@ export function Script() {
     };
 
     const visibleSuggestions = trendingSuggestions.slice(0, visibleCount);
+
+    // Function to generate color based on score
+    const getScoreColor = (score: number) => {
+        // Convert score to a value between 0 and 1
+        const normalizedScore = score / 100;
+        
+        // Generate RGB values
+        // Red component increases with score
+        // Blue component decreases with score
+        const red = Math.round(normalizedScore * 255);
+        const blue = Math.round((1 - normalizedScore) * 255);
+        
+        return `rgb(${red}, 0, ${blue})`;
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -135,21 +154,32 @@ export function Script() {
                                 ) : (
                                     visibleSuggestions.map((suggestion, index) => (
                                         <div
-                                            key={suggestion}
+                                            key={suggestion.topic}
                                             className="suggestion-button opacity-0 translate-y-4 scale-95"
                                             style={{
                                                 animation: `fadeInUp 0.3s ease-out forwards ${index * 0.1}s`
                                             }}
                                         >
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setScriptTopic(suggestion)}
-                                                className="text-xs hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                                            >
-                                                {suggestion}
-                                            </Button>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setScriptTopic(suggestion.topic)}
+                                                        className="text-xs text-white transition-all"
+                                                        style={{
+                                                            backgroundColor: getScoreColor(suggestion.score),
+                                                            borderColor: getScoreColor(suggestion.score),
+                                                        }}
+                                                    >
+                                                        {suggestion.topic}
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Trending Score: {suggestion.score}%</p>
+                                                </TooltipContent>
+                                            </Tooltip>
                                         </div>
                                     ))
                                 )}

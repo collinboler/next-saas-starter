@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
+interface TrendingTopic {
+    topic: string;
+    score: number;
+}
+
 export async function GET() {
     try {
         // Get all files in the scripts directory
@@ -32,17 +37,20 @@ export async function GET() {
         }
 
         // Parse the keywords and scores
-        const trendingTopics = keywordsSection
+        const trendingTopics: TrendingTopic[] = keywordsSection
             .split('\n')
             .filter(line => line.trim() && line.includes('.'))
             .map(line => {
-                const match = line.match(/\d+\.\s*(.*?)\s*-\s*Score:/);
+                const match = line.match(/\d+\.\s*(.*?)\s*-\s*Score:\s*(\d+)%/);
                 if (match) {
-                    return match[1].trim();
+                    return {
+                        topic: match[1].trim(),
+                        score: parseInt(match[2], 10)
+                    };
                 }
                 return null;
             })
-            .filter(Boolean)
+            .filter((item): item is TrendingTopic => item !== null)
             .slice(0, 32); // Get up to 32 topics
 
         return NextResponse.json({ topics: trendingTopics });
