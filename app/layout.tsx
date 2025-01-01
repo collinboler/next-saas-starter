@@ -5,6 +5,7 @@ import { UserProvider } from '@/lib/auth';
 import { getUser } from '@/lib/db/queries';
 import { Analytics } from "@vercel/analytics/react"
 import { ThemeProvider } from 'next-themes';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const manrope = Manrope({ subsets: ['latin'] });
 
@@ -17,7 +18,9 @@ function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
       storageKey="viralgo-theme"
     >
-      {children}
+      <TooltipProvider>
+        {children}
+      </TooltipProvider>
     </ThemeProvider>
   );
 }

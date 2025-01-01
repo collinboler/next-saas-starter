@@ -6,6 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { InfoIcon } from "lucide-react";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function Script() {
     const [currentStep, setCurrentStep] = useState(1);
@@ -109,7 +116,19 @@ export function Script() {
                             className="min-h-[100px]"
                         />
                         <div className="mt-2">
-                            <p className="text-sm text-gray-600 mb-2">Trending topic suggestions:</p>
+                            <div className="flex items-center gap-2 mb-2">
+                                <p className="text-sm text-gray-600">Trending topic suggestions:</p>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <InfoIcon className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help" />
+                                        </TooltipTrigger>
+                                        <TooltipContent className="max-w-xs">
+                                            <p>These are the current top TikTok searched terms right now in the United States. More support is coming for other countries soon.</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
                             <div className="flex flex-wrap gap-2">
                                 {loadingSuggestions ? (
                                     <div className="text-sm text-gray-500">Loading trending topics...</div>
