@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,17 +14,34 @@ export function Script() {
     const [additionalStyle, setAdditionalStyle] = useState("");
     const [loading, setLoading] = useState(false);
     const [generatedScript, setGeneratedScript] = useState("");
+    const [visibleCount, setVisibleCount] = useState(3);
+    const [trendingSuggestions, setTrendingSuggestions] = useState<string[]>([]);
+    const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+    const [remixInput, setRemixInput] = useState("");
 
-    const trendingSuggestions = [
-        "GI Jane Gym Apology Video",
-        "Bye Bye Bye Mufasa Dance",
-        "Olympics 2024: Coach Claudia Story",
-        "Liz's $800,000 Prize Jump Reaction",
-        "Squid Game Player 380 Story",
-        "TikTok Dance Trends 2024",
-        "Husky in the Snow Explained",
-        "Family Gathering Moments"
-    ];
+    useEffect(() => {
+        const fetchTrendingTopics = async () => {
+            try {
+                const response = await fetch('/api/trending-topics');
+                const data = await response.json();
+                if (data.topics) {
+                    setTrendingSuggestions(data.topics);
+                }
+            } catch (error) {
+                console.error('Error fetching trending topics:', error);
+            } finally {
+                setLoadingSuggestions(false);
+            }
+        };
+
+        fetchTrendingTopics();
+    }, []);
+
+    const handleShowMore = () => {
+        setVisibleCount(prev => Math.min(prev + 8, trendingSuggestions.length));
+    };
+
+    const visibleSuggestions = trendingSuggestions.slice(0, visibleCount);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -45,6 +62,30 @@ export function Script() {
             setGeneratedScript(data.script);
         } catch (error) {
             console.error("Error generating script:", error);
+        }
+        setLoading(false);
+    };
+
+    const handleRemix = async () => {
+        if (!remixInput.trim()) return;
+        setLoading(true);
+        try {
+            const response = await fetch("/api/generate-script", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    topic: scriptTopic,
+                    reference: referenceContent,
+                    style: remixInput,
+                }),
+            });
+            const data = await response.json();
+            setGeneratedScript(data.script);
+            setRemixInput("");
+        } catch (error) {
+            console.error("Error remixing script:", error);
         }
         setLoading(false);
     };
@@ -70,23 +111,72 @@ export function Script() {
                         <div className="mt-2">
                             <p className="text-sm text-gray-600 mb-2">Trending topic suggestions:</p>
                             <div className="flex flex-wrap gap-2">
-                                {trendingSuggestions.map((suggestion, index) => (
-                                    <Button
-                                        key={index}
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            setScriptTopic(suggestion);
-                                            handleNextStep();
-                                        }}
-                                        className="text-xs"
-                                    >
-                                        {suggestion}
-                                    </Button>
-                                ))}
+                                {loadingSuggestions ? (
+                                    <div className="text-sm text-gray-500">Loading trending topics...</div>
+                                ) : (
+                                    visibleSuggestions.map((suggestion, index) => (
+                                        <div
+                                            key={suggestion}
+                                            className="suggestion-button opacity-0 translate-y-4 scale-95"
+                                            style={{
+                                                animation: `fadeInUp 0.3s ease-out forwards ${index * 0.1}s`
+                                            }}
+                                        >
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setScriptTopic(suggestion);
+                                                    handleNextStep();
+                                                }}
+                                                className="text-xs"
+                                            >
+                                                {suggestion}
+                                            </Button>
+                                        </div>
+                                    ))
+                                )}
                             </div>
+                            {visibleCount < trendingSuggestions.length && (
+                                <div 
+                                    className="show-more-button opacity-0"
+                                    style={{
+                                        animation: 'fadeIn 0.3s ease-out 0.5s forwards'
+                                    }}
+                                >
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleShowMore}
+                                        className="mt-2 text-xs text-gray-500 hover:text-gray-700"
+                                    >
+                                        Show More Suggestions ({trendingSuggestions.length - visibleCount} more)
+                                    </Button>
+                                </div>
+                            )}
                         </div>
+                        <style jsx>{`
+                            @keyframes fadeInUp {
+                                from {
+                                    opacity: 0;
+                                    transform: translateY(1rem) scale(0.95);
+                                }
+                                to {
+                                    opacity: 1;
+                                    transform: translateY(0) scale(1);
+                                }
+                            }
+                            @keyframes fadeIn {
+                                from {
+                                    opacity: 0;
+                                }
+                                to {
+                                    opacity: 1;
+                                }
+                            }
+                        `}</style>
                         <Button 
                             type="button" 
                             className="w-full mt-4" 
@@ -122,7 +212,7 @@ export function Script() {
                     </div>
                 )}
 
-                {currentStep === 3 && (
+                {currentStep === 3 && !generatedScript && (
                     <div className="space-y-2">
                         <Label htmlFor="additionalStyle">
                             3. Any additional style preferences? (Optional)
@@ -141,10 +231,27 @@ export function Script() {
             </form>
 
             {generatedScript && (
-                <Card className="mt-6 p-4">
-                    <h2 className="text-xl font-semibold mb-2">Generated Script</h2>
-                    <div className="whitespace-pre-wrap">{generatedScript}</div>
-                </Card>
+                <div className="space-y-6">
+                    <Card className="p-4">
+                        <h2 className="text-xl font-semibold mb-2">Generated Script</h2>
+                        <div className="whitespace-pre-wrap">{generatedScript}</div>
+                    </Card>
+                    
+                    <div className="flex gap-2">
+                        <Input
+                            placeholder="Enter remix instructions (e.g., 'Make it funnier' or 'Add more storytelling')"
+                            value={remixInput}
+                            onChange={(e) => setRemixInput(e.target.value)}
+                            className="flex-1"
+                        />
+                        <Button 
+                            onClick={handleRemix}
+                            disabled={loading || !remixInput.trim()}
+                        >
+                            {loading ? "Remixing..." : "Remix"}
+                        </Button>
+                    </div>
+                </div>
             )}
         </div>
     );
