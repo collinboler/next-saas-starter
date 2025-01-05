@@ -177,7 +177,7 @@ export function Script() {
                                                     </Button>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
-                                                    <p>Trending Score: {suggestion.score}%</p>
+                                                    <p>Virality Score: {suggestion.score}%</p>
                                                 </TooltipContent>
                                             </Tooltip>
                                         </div>
