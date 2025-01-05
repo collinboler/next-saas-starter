@@ -400,21 +400,40 @@ export function Script() {
                     const lineClass = isHeading ? "text-xl font-semibold" : "mb-2";
 
                     while (i < line.length) {
-                        if (line[i] === '*' && line[i + 1] === '*') {
-                            if (currentText) {
-                                parts.push(currentText);
-                                currentText = '';
-                            }
-                            i += 2;
-                            let boldText = '';
-                            while (i < line.length && !(line[i] === '*' && line[i + 1] === '*')) {
-                                boldText += line[i];
+                        if (line[i] === '*') {
+                            if (line[i + 1] === '*') {
+                                // Bold text
+                                if (currentText) {
+                                    parts.push(currentText);
+                                    currentText = '';
+                                }
+                                i += 2;
+                                let boldText = '';
+                                while (i < line.length && !(line[i] === '*' && line[i + 1] === '*')) {
+                                    boldText += line[i];
+                                    i++;
+                                }
+                                if (boldText) {
+                                    parts.push(<strong key={`bold-${i}`}>{boldText}</strong>);
+                                }
+                                i += 2;
+                            } else {
+                                // Italic text
+                                if (currentText) {
+                                    parts.push(currentText);
+                                    currentText = '';
+                                }
+                                i++;
+                                let italicText = '';
+                                while (i < line.length && line[i] !== '*') {
+                                    italicText += line[i];
+                                    i++;
+                                }
+                                if (italicText) {
+                                    parts.push(<em key={`italic-${i}`}>{italicText}</em>);
+                                }
                                 i++;
                             }
-                            if (boldText) {
-                                parts.push(<strong key={`bold-${i}`}>{boldText}</strong>);
-                            }
-                            i += 2;
                         } else {
                             currentText += line[i];
                             i++;
