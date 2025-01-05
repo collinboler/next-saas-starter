@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pip install -r requirements.txt",
+  "buildCommand": "pnpm install --no-frozen-lockfile && pip install -r requirements.txt && pnpm build",
   "builds": [
     {
       "src": "package.json",
