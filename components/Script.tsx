@@ -73,9 +73,21 @@ export function Script() {
         return `rgb(${red}, 0, ${blue})`;
     };
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+
+        const finalMessage = {
+            role: "user",
+            content: `Topic: ${scriptTopic}
+            ${referenceContent ? `Reference Content: ${referenceContent}` : ''}
+            ${transcription ? `Video Analysis: ${transcription}` : ''}
+            ${additionalStyle ? `Style Preferences: ${additionalStyle}` : ''}`
+        };
+
+        // Add the console.log here
+        console.log("Final message being sent to assistant:", finalMessage);
+
         try {
             const response = await fetch("/api/generate-script", {
                 method: "POST",
@@ -85,7 +97,7 @@ export function Script() {
                 body: JSON.stringify({
                     topic: scriptTopic,
                     reference: referenceContent,
-                    style: additionalStyle,
+                    style: additionalStyle
                 }),
             });
             const data = await response.json();
@@ -131,29 +143,47 @@ export function Script() {
             const oembedResponse = await fetch(
                 `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`
             );
+            
+            if (!oembedResponse.ok) {
+                throw new Error('Failed to fetch TikTok embed data');
+            }
+            
             const oembedData = await oembedResponse.json();
             setEmbedHtml(oembedData.html);
-    
-            // Then get the transcription
+
+            // Extract additional metadata from oEmbed response
+            const metadata = {
+                caption: oembedData.title || '',
+                username: oembedData.author_name || '',
+                soundTitle: oembedData.music_name || '',
+                soundLink: oembedData.music_url || '',
+            };
+
+            // Then get the transcription with additional metadata
             const response = await fetch('/api/process-tiktok', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ url }),
+                body: JSON.stringify({ 
+                    url,
+                    metadata 
+                }),
             });
-    
+
             if (!response.ok) {
-                throw new Error('Failed to process video');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to process video');
             }
-    
+
             const data = await response.json();
             if (data.transcription) {
                 setTranscription(data.transcription);
             }
         } catch (error) {
             console.error('Error processing video:', error);
-            // Handle error appropriately
+            // Show error to user instead of just logging
+            alert(error instanceof Error ? error.message : 'Failed to process video');
         } finally {
             setProcessingVideo(false);
         }
@@ -356,11 +386,53 @@ export function Script() {
             </form>
 
             {generatedScript && (
-                <div className="space-y-6">
-                    <Card className="p-4">
-                        <h2 className="text-xl font-semibold mb-2">Generated Script</h2>
-                        <div className="whitespace-pre-wrap">{generatedScript}</div>
-                    </Card>
+    <div className="space-y-6">
+        <Card className="p-4">
+            <h2 className="text-xl font-semibold mb-2">Generated Script</h2>
+            <div className="whitespace-pre-wrap">
+                {generatedScript.split('\n').map((line, index) => {
+                    const parts = [];
+                    let currentText = '';
+                    let i = 0;
+
+                    // Check if line starts with ###
+                    const isHeading = line.trim().startsWith('###');
+                    const lineClass = isHeading ? "text-xl font-semibold" : "mb-2";
+
+                    while (i < line.length) {
+                        if (line[i] === '*' && line[i + 1] === '*') {
+                            if (currentText) {
+                                parts.push(currentText);
+                                currentText = '';
+                            }
+                            i += 2;
+                            let boldText = '';
+                            while (i < line.length && !(line[i] === '*' && line[i + 1] === '*')) {
+                                boldText += line[i];
+                                i++;
+                            }
+                            if (boldText) {
+                                parts.push(<strong key={`bold-${i}`}>{boldText}</strong>);
+                            }
+                            i += 2;
+                        } else {
+                            currentText += line[i];
+                            i++;
+                        }
+                    }
+
+                    if (currentText) {
+                        parts.push(currentText);
+                    }
+
+                    return (
+                        <p key={index} className={lineClass}>
+                            {isHeading ? line.replace('###', '').trim() : parts}
+                        </p>
+                    );
+                })}
+            </div>
+        </Card>
                     
                     <div className="flex gap-2">
                         <Input
