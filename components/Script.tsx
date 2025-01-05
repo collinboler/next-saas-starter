@@ -30,6 +30,9 @@ export function Script() {
     const [trendingSuggestions, setTrendingSuggestions] = useState<TrendingTopic[]>([]);
     const [loadingSuggestions, setLoadingSuggestions] = useState(true);
     const [remixInput, setRemixInput] = useState("");
+    const [videoUrl, setVideoUrl] = useState<string | null>(null);
+    const [transcription, setTranscription] = useState<string | null>(null);
+    const [processingVideo, setProcessingVideo] = useState(false);
 
     useEffect(() => {
         const fetchTrendingTopics = async () => {
@@ -118,6 +121,36 @@ export function Script() {
 
     const handleNextStep = () => {
         setCurrentStep(prev => prev + 1);
+    };
+
+    const handleVideoProcess = async (url: string) => {
+        setProcessingVideo(true);
+        try {
+            const response = await fetch("/api/process-tiktok", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ url }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to process video');
+            }
+
+            const data = await response.json();
+            setVideoUrl(data.video);
+            setTranscription(data.transcription);
+            
+            // Update reference content with transcription for AI processing
+            setReferenceContent(prev => 
+                `${prev}\nVideo Transcription: ${data.transcription}`
+            );
+        } catch (error) {
+            console.error("Error processing video:", error);
+        } finally {
+            setProcessingVideo(false);
+        }
     };
 
     return (
@@ -235,16 +268,52 @@ export function Script() {
                 )}
 
                 {currentStep === 2 && (
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                         <Label htmlFor="referenceContent">
                             2. Want to reference a specific video or account style?
                         </Label>
-                        <Input
-                            id="referenceContent"
-                            placeholder="Paste a TikTok video link or account @ here..."
-                            value={referenceContent}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReferenceContent(e.target.value)}
-                        />
+                        <div className="space-y-2">
+                            <Input
+                                id="referenceContent"
+                                placeholder="Paste a TikTok video link or account @ here..."
+                                value={referenceContent}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                    setReferenceContent(e.target.value);
+                                    // Reset video and transcription when input changes
+                                    setVideoUrl(null);
+                                    setTranscription(null);
+                                }}
+                            />
+                            {referenceContent.includes('tiktok.com') && (
+                                <Button
+                                    type="button"
+                                    onClick={() => handleVideoProcess(referenceContent)}
+                                    disabled={processingVideo}
+                                    className="w-full"
+                                >
+                                    {processingVideo ? "Processing Video..." : "Process TikTok Video"}
+                                </Button>
+                            )}
+                        </div>
+                        
+                        {videoUrl && (
+                            <div className="mt-4 space-y-4">
+                                <div className="relative aspect-video w-full">
+                                    <video
+                                        src={videoUrl}
+                                        controls
+                                        className="rounded-lg w-full h-full object-cover"
+                                    />
+                                </div>
+                                {transcription && (
+                                    <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                        <h3 className="text-sm font-medium mb-2">Video Transcription:</h3>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">{transcription}</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        
                         <p className="text-xs text-gray-500">
                             This helps match the style of your favorite creators
                         </p>
