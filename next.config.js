@@ -4,14 +4,7 @@ const nextConfig = {
   images: {
     domains: ['avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
   },
-  transpilePackages: ['lucide-react'],
-  webpack: (config) => {
-    config.module.rules.push({
-      test: /\.css$/,
-      use: ['style-loader', 'css-loader', 'postcss-loader'],
-    });
-    return config;
-  },
+  transpilePackages: ['lucide-react']
 };
 
 module.exports = nextConfig; 
