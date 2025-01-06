@@ -34,6 +34,7 @@ export function Script() {
     const [transcription, setTranscription] = useState<string | null>(null);
     const [processingVideo, setProcessingVideo] = useState(false);
     const [embedHtml, setEmbedHtml] = useState<string | null>(null);
+    const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
 
     useEffect(() => {
         const fetchTrendingTopics = async () => {
@@ -58,6 +59,11 @@ export function Script() {
     };
 
     const visibleSuggestions = trendingSuggestions.slice(0, visibleCount);
+
+    // Filter out selected topics from visible suggestions
+    const filteredVisibleSuggestions = visibleSuggestions.filter(
+        suggestion => !selectedTopics.includes(suggestion.topic)
+    );
 
     // Function to generate color based on score
     const getScoreColor = (score: number) => {
@@ -189,27 +195,66 @@ export function Script() {
         }
     };
 
+    const handleTopicClick = (topic: string) => {
+        if (!selectedTopics.includes(topic)) {
+            const newSelectedTopics = [...selectedTopics, topic];
+            setSelectedTopics(newSelectedTopics);
+            setScriptTopic(newSelectedTopics.join('; '));
+        }
+    };
+
+    const handleRemoveTopic = (topicToRemove: string) => {
+        const newSelectedTopics = selectedTopics.filter(topic => topic !== topicToRemove);
+        setSelectedTopics(newSelectedTopics);
+        setScriptTopic(newSelectedTopics.join('; '));
+    };
+
     return (
         <div className="container mx-auto p-4 max-w-2xl">
             <h1 className="text-2xl font-bold mb-6">TikTok Script Generator</h1>
             <form onSubmit={handleSubmit} className="space-y-6">
                 {currentStep === 1 && (
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                         <Label htmlFor="scriptTopic">1. What's your script topic/idea?</Label>
+                        
+                        {/* Selected Topics Section */}
+                        <div className={`bg-secondary/50 p-3 rounded-lg transition-all ${selectedTopics.length > 0 ? 'block' : 'hidden'}`}>
+                            <div className="text-sm text-muted-foreground mb-2">Selected Topics:</div>
+                            <div className="flex flex-wrap gap-2">
+                                {selectedTopics.map((topic) => (
+                                    <div 
+                                        key={topic} 
+                                        className="flex items-center bg-background border border-input rounded-full px-3 py-1 text-sm"
+                                    >
+                                        <span>{topic}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveTopic(topic)}
+                                            className="ml-2 text-muted-foreground hover:text-foreground"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
                         <Textarea
                             id="scriptTopic"
                             placeholder="Enter your script topic or idea..."
                             value={scriptTopic}
-                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setScriptTopic(e.target.value)}
+                            onChange={(e) => setScriptTopic(e.target.value)}
                             className="min-h-[100px]"
                         />
-                        <div className="mt-2">
+                        
+                        {/* Trending Topics Section */}
+                        <div className="mt-4">
                             <div className="flex items-center gap-2 mb-2">
-                                <p className="text-sm text-gray-600">Trending topic suggestions:</p>
+                                <p className="text-sm text-muted-foreground">Trending topic suggestions:</p>
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <InfoIcon className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help" />
+                                            <InfoIcon className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help" />
                                         </TooltipTrigger>
                                         <TooltipContent className="max-w-xs">
                                             <p>These are the current top TikTok searched terms right now in the United States. More support is coming for other countries soon.</p>
@@ -217,11 +262,12 @@ export function Script() {
                                     </Tooltip>
                                 </TooltipProvider>
                             </div>
+                            
                             <div className="flex flex-wrap gap-2">
                                 {loadingSuggestions ? (
-                                    <div className="text-sm text-gray-500">Loading trending topics...</div>
+                                    <div className="text-sm text-muted-foreground">Loading trending topics...</div>
                                 ) : (
-                                    visibleSuggestions.map((suggestion, index) => (
+                                    filteredVisibleSuggestions.map((suggestion, index) => (
                                         <div
                                             key={suggestion.topic}
                                             className="suggestion-button opacity-0 translate-y-4 scale-95"
@@ -229,30 +275,24 @@ export function Script() {
                                                 animation: `fadeInUp 0.3s ease-out forwards ${index * 0.1}s`
                                             }}
                                         >
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => setScriptTopic(suggestion.topic)}
-                                                        className="text-xs text-white transition-all"
-                                                        style={{
-                                                            backgroundColor: getScoreColor(suggestion.score),
-                                                            borderColor: getScoreColor(suggestion.score),
-                                                        }}
-                                                    >
-                                                        {suggestion.topic}
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Virality Score: {suggestion.score}%</p>
-                                                </TooltipContent>
-                                            </Tooltip>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleTopicClick(suggestion.topic)}
+                                                className="text-xs text-white transition-all"
+                                                style={{
+                                                    backgroundColor: getScoreColor(suggestion.score),
+                                                    borderColor: getScoreColor(suggestion.score),
+                                                }}
+                                            >
+                                                {suggestion.topic}
+                                            </Button>
                                         </div>
                                     ))
                                 )}
                             </div>
+
                             {visibleCount < trendingSuggestions.length && (
                                 <div 
                                     className="show-more-button opacity-0"
@@ -265,41 +305,34 @@ export function Script() {
                                         variant="ghost"
                                         size="sm"
                                         onClick={handleShowMore}
-                                        className="mt-2 text-xs text-gray-500 hover:text-gray-700"
+                                        className="mt-2"
                                     >
-                                        Show More Suggestions ({trendingSuggestions.length - visibleCount} more)
+                                        Show More
                                     </Button>
                                 </div>
                             )}
+
+                            <style jsx>{`
+                                @keyframes fadeInUp {
+                                    from {
+                                        opacity: 0;
+                                        transform: translateY(1rem) scale(0.95);
+                                    }
+                                    to {
+                                        opacity: 1;
+                                        transform: translateY(0) scale(1);
+                                    }
+                                }
+                                @keyframes fadeIn {
+                                    from {
+                                        opacity: 0;
+                                    }
+                                    to {
+                                        opacity: 1;
+                                    }
+                                }
+                            `}</style>
                         </div>
-                        <style jsx>{`
-                            @keyframes fadeInUp {
-                                from {
-                                    opacity: 0;
-                                    transform: translateY(1rem) scale(0.95);
-                                }
-                                to {
-                                    opacity: 1;
-                                    transform: translateY(0) scale(1);
-                                }
-                            }
-                            @keyframes fadeIn {
-                                from {
-                                    opacity: 0;
-                                }
-                                to {
-                                    opacity: 1;
-                                }
-                            }
-                        `}</style>
-                        <Button 
-                            type="button" 
-                            className="w-full mt-4" 
-                            onClick={handleNextStep}
-                            disabled={!scriptTopic.trim()}
-                        >
-                            Next
-                        </Button>
                     </div>
                 )}
 
