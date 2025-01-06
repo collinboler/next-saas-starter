@@ -55,5 +55,9 @@
     "tailwindcss-react-aria-components": "1.1.6",
     "typescript": "^5.6.3",
     "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "cssnano": "^7.0.6",
+    "postcss-nesting": "^13.0.1"
   }
 }
