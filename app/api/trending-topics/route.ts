@@ -74,11 +74,12 @@ export async function GET() {
                 }
             } else if (currentSection === 'creators') {
                 // Format: "1. Username: username, Nickname: nickname"
-                const match = trimmedLine.match(/^\d+\.\s*Username:\s*([^,]+)/);
+                const match = trimmedLine.match(/^(\d+)\.\s*Username:\s*([^,]+)/);
                 if (match) {
+                    const rank = parseInt(match[1]);
                     sections.creators.push({
-                        topic: match[1].trim(),
-                        score: Math.floor(Math.random() * 30) + 70 // Random score between 70-100 for demo
+                        topic: match[2].trim(),
+                        score: rank // Use the actual rank number
                     });
                 }
             }

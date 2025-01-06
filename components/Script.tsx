@@ -77,18 +77,23 @@ export function Script() {
         suggestion => !selectedTopics.includes(suggestion.topic)
     );
 
-    // Function to generate color based on score
-    const getScoreColor = (score: number) => {
-        // Convert score to a value between 0 and 1
-        const normalizedScore = score / 100;
-        
-        // Generate RGB values
-        // Red component increases with score
-        // Blue component decreases with score
-        const red = Math.round(normalizedScore * 255);
-        const blue = Math.round((1 - normalizedScore) * 255);
-        
-        return `rgb(${red}, 0, ${blue})`;
+    // Function to generate color based on score or rank
+    const getScoreColor = (score: number, category: TrendingCategory) => {
+        if (category === 'creators') {
+            // For creators, score is their rank (lower is better)
+            // Convert rank to a percentage where rank 1 = 100% and max rank = 0%
+            const maxRank = trendingCreators.length;
+            const normalizedScore = 1 - ((score - 1) / (maxRank - 1));
+            const red = Math.round(normalizedScore * 255);
+            const blue = Math.round((1 - normalizedScore) * 255);
+            return `rgb(${red}, 0, ${blue})`;
+        } else {
+            // For topics and hashtags, use percentage-based coloring
+            const normalizedScore = score / 100;
+            const red = Math.round(normalizedScore * 255);
+            const blue = Math.round((1 - normalizedScore) * 255);
+            return `rgb(${red}, 0, ${blue})`;
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -225,10 +230,7 @@ export function Script() {
     const getCurrentTrendingItems = () => {
         switch (trendingCategory) {
             case 'hashtags':
-                return trendingHashtags.slice(0, visibleCount).map(item => ({
-                    ...item,
-                    topic: `#${item.topic}`
-                }));
+                return trendingHashtags.slice(0, visibleCount);
             case 'creators':
                 return trendingCreators.slice(0, visibleCount).map(item => ({
                     ...item,
@@ -277,9 +279,22 @@ export function Script() {
                             <div className="text-sm text-muted-foreground mb-2">Selected Topics:</div>
                             <div className="flex flex-wrap gap-2">
                                 {selectedTopics.map((topic) => {
-                                    const originalSuggestion = trendingSuggestions.find(s => s.topic === topic);
+                                    // Find the original suggestion from all categories
+                                    let originalSuggestion: TrendingTopic | undefined;
+                                    let category: TrendingCategory = 'topics';
+
+                                    if (topic.startsWith('@')) {
+                                        originalSuggestion = trendingCreators.find(s => `@${s.topic}` === topic);
+                                        category = 'creators';
+                                    } else if (topic.startsWith('#')) {
+                                        originalSuggestion = trendingHashtags.find(s => `#${s.topic}` === topic);
+                                        category = 'hashtags';
+                                    } else {
+                                        originalSuggestion = trendingSuggestions.find(s => s.topic === topic);
+                                    }
+
                                     const backgroundColor = originalSuggestion 
-                                        ? getScoreColor(originalSuggestion.score)
+                                        ? getScoreColor(originalSuggestion.score, category)
                                         : 'hsl(var(--primary))';
                                     
                                     return (
@@ -307,7 +322,7 @@ export function Script() {
                                                     </div>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
-                                                    <p>Virality Score:{originalSuggestion?.score}%</p>
+                                                    <p>{category === 'creators' ? `Rank #${originalSuggestion?.score}` : `${originalSuggestion?.score}%`}</p>
                                                 </TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>
@@ -368,15 +383,15 @@ export function Script() {
                                                             onClick={() => handleTopicClick(item.topic)}
                                                             className="text-xs text-white transition-all"
                                                             style={{
-                                                                backgroundColor: getScoreColor(item.score),
-                                                                borderColor: getScoreColor(item.score),
+                                                                backgroundColor: getScoreColor(item.score, trendingCategory),
+                                                                borderColor: getScoreColor(item.score, trendingCategory),
                                                             }}
                                                         >
                                                             {item.topic}
                                                         </Button>
                                                     </TooltipTrigger>
                                                     <TooltipContent>
-                                                        <p>{item.score}%</p>
+                                                        <p>{trendingCategory === 'creators' ? `Rank #${item.score}` : `${item.score}%`}</p>
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </TooltipProvider>
@@ -425,6 +440,15 @@ export function Script() {
                                 }
                             `}</style>
                         </div>
+
+                        <Button 
+                            type="button" 
+                            className="w-full mt-4" 
+                            onClick={handleNextStep}
+                            disabled={!scriptTopic.trim()}
+                        >
+                            Next
+                        </Button>
                     </div>
                 )}
 
