@@ -19,6 +19,9 @@ interface TrendingTopic {
     score: number;
 }
 
+// Add type for trending category
+type TrendingCategory = 'topics' | 'hashtags' | 'creators';
+
 export function Script() {
     const [currentStep, setCurrentStep] = useState(1);
     const [scriptTopic, setScriptTopic] = useState("");
@@ -35,23 +38,32 @@ export function Script() {
     const [processingVideo, setProcessingVideo] = useState(false);
     const [embedHtml, setEmbedHtml] = useState<string | null>(null);
     const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+    const [trendingCategory, setTrendingCategory] = useState<TrendingCategory>('topics');
+    const [trendingHashtags, setTrendingHashtags] = useState<TrendingTopic[]>([]);
+    const [trendingCreators, setTrendingCreators] = useState<TrendingTopic[]>([]);
 
     useEffect(() => {
-        const fetchTrendingTopics = async () => {
+        const fetchTrendingData = async () => {
             try {
                 const response = await fetch('/api/trending-topics');
                 const data = await response.json();
                 if (data.topics) {
                     setTrendingSuggestions(data.topics);
                 }
+                if (data.hashtags) {
+                    setTrendingHashtags(data.hashtags);
+                }
+                if (data.creators) {
+                    setTrendingCreators(data.creators);
+                }
             } catch (error) {
-                console.error('Error fetching trending topics:', error);
+                console.error('Error fetching trending data:', error);
             } finally {
                 setLoadingSuggestions(false);
             }
         };
 
-        fetchTrendingTopics();
+        fetchTrendingData();
     }, []);
 
     const handleShowMore = () => {
@@ -209,6 +221,41 @@ export function Script() {
         setScriptTopic(newSelectedTopics.join('; '));
     };
 
+    // Get current trending items based on category
+    const getCurrentTrendingItems = () => {
+        switch (trendingCategory) {
+            case 'hashtags':
+                return trendingHashtags.slice(0, visibleCount).map(item => ({
+                    ...item,
+                    topic: `#${item.topic}`
+                }));
+            case 'creators':
+                return trendingCreators.slice(0, visibleCount).map(item => ({
+                    ...item,
+                    topic: `@${item.topic}`
+                }));
+            default:
+                return trendingSuggestions.slice(0, visibleCount);
+        }
+    };
+
+    // Get total count for current category
+    const getCurrentTotalCount = () => {
+        switch (trendingCategory) {
+            case 'hashtags':
+                return trendingHashtags.length;
+            case 'creators':
+                return trendingCreators.length;
+            default:
+                return trendingSuggestions.length;
+        }
+    };
+
+    // Filter selected items from current category
+    const filteredVisibleItems = getCurrentTrendingItems().filter(
+        item => !selectedTopics.includes(item.topic)
+    );
+
     return (
         <div className="container mx-auto p-4 max-w-2xl">
             <h1 className="text-2xl font-bold mb-6">TikTok Script Generator</h1>
@@ -230,82 +277,115 @@ export function Script() {
                             <div className="text-sm text-muted-foreground mb-2">Selected Topics:</div>
                             <div className="flex flex-wrap gap-2">
                                 {selectedTopics.map((topic) => {
-                                    // Find the original suggestion to get its score
                                     const originalSuggestion = trendingSuggestions.find(s => s.topic === topic);
                                     const backgroundColor = originalSuggestion 
                                         ? getScoreColor(originalSuggestion.score)
                                         : 'hsl(var(--primary))';
                                     
                                     return (
-                                        <div 
-                                            key={topic} 
-                                            className="flex items-center rounded-full text-xs"
-                                            style={{
-                                                backgroundColor,
-                                                borderColor: backgroundColor,
-                                            }}
-                                        >
-                                            <span className="px-3 py-1 text-white">{topic}</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveTopic(topic)}
-                                                className="pr-2 pl-0 text-white/80 hover:text-white"
-                                            >
-                                                ×
-                                            </button>
-                                        </div>
+                                        <TooltipProvider key={topic}>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div 
+                                                        className="flex items-center rounded-full text-xs"
+                                                        style={{
+                                                            backgroundColor,
+                                                            borderColor: backgroundColor,
+                                                        }}
+                                                    >
+                                                        <span className="px-3 py-1 text-white">{topic}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleRemoveTopic(topic);
+                                                            }}
+                                                            className="pr-2 pl-0 text-white/80 hover:text-white"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Virality Score:{originalSuggestion?.score}%</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
                                     );
                                 })}
                             </div>
                         </div>
                         
-                        {/* Trending Topics Section */}
+                        {/* Trending Section */}
                         <div className="mt-4">
-                            <div className="flex items-center gap-2 mb-2">
-                                <p className="text-sm text-muted-foreground">Trending topic suggestions:</p>
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <InfoIcon className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help" />
-                                        </TooltipTrigger>
-                                        <TooltipContent className="max-w-xs">
-                                            <p>These are the current top TikTok searched terms right now in the United States. More support is coming for other countries soon.</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
+                            <div className="flex items-center justify-between gap-2 mb-4">
+                                <div className="flex items-center gap-2">
+                                    <select
+                                        value={trendingCategory}
+                                        onChange={(e) => {
+                                            setTrendingCategory(e.target.value as TrendingCategory);
+                                            setVisibleCount(3); // Reset visible count when changing category
+                                        }}
+                                        className="h-9 w-[180px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                    >
+                                        <option value="topics">Trending Topics</option>
+                                        <option value="hashtags">Trending Hashtags</option>
+                                        <option value="creators">Trending Creators</option>
+                                    </select>
+
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <InfoIcon className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help" />
+                                            </TooltipTrigger>
+                                            <TooltipContent className="max-w-xs">
+                                                <p>These are the current top TikTok searched terms right now in the United States. More support is coming for other countries soon.</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </div>
                             </div>
                             
                             <div className="flex flex-wrap gap-2">
                                 {loadingSuggestions ? (
-                                    <div className="text-sm text-muted-foreground">Loading trending topics...</div>
+                                    <div className="text-sm text-muted-foreground">Loading trending items...</div>
                                 ) : (
-                                    filteredVisibleSuggestions.map((suggestion, index) => (
+                                    filteredVisibleItems.map((item, index) => (
                                         <div
-                                            key={suggestion.topic}
+                                            key={item.topic}
                                             className="suggestion-button opacity-0 translate-y-4 scale-95"
                                             style={{
                                                 animation: `fadeInUp 0.3s ease-out forwards ${index * 0.1}s`
                                             }}
                                         >
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleTopicClick(suggestion.topic)}
-                                                className="text-xs text-white transition-all"
-                                                style={{
-                                                    backgroundColor: getScoreColor(suggestion.score),
-                                                    borderColor: getScoreColor(suggestion.score),
-                                                }}
-                                            >
-                                                {suggestion.topic}
-                                            </Button>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleTopicClick(item.topic)}
+                                                            className="text-xs text-white transition-all"
+                                                            style={{
+                                                                backgroundColor: getScoreColor(item.score),
+                                                                borderColor: getScoreColor(item.score),
+                                                            }}
+                                                        >
+                                                            {item.topic}
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>{item.score}%</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
                                         </div>
                                     ))
                                 )}
                             </div>
 
-                            {visibleCount < trendingSuggestions.length && (
+                            {visibleCount < getCurrentTotalCount() && (
                                 <div 
                                     className="show-more-button opacity-0"
                                     style={{

@@ -132,7 +132,7 @@ def get_trending_hashtags():
         return trending_hashtags
     
     if trending_hashtags:
-        result = "\n\nTrending Hashtags\n"
+        result = "\n\nTrending Hashtags:\n"
         for idx, hashtag in enumerate(trending_hashtags, start=1):
             result += f"{idx}. {hashtag}\n"
         return result
