@@ -216,28 +216,6 @@ export function Script() {
                 {currentStep === 1 && (
                     <div className="space-y-4">
                         <Label htmlFor="scriptTopic">1. What's your script topic/idea?</Label>
-                        
-                        {/* Selected Topics Section */}
-                        <div className={`bg-secondary/50 p-3 rounded-lg transition-all ${selectedTopics.length > 0 ? 'block' : 'hidden'}`}>
-                            <div className="text-sm text-muted-foreground mb-2">Selected Topics:</div>
-                            <div className="flex flex-wrap gap-2">
-                                {selectedTopics.map((topic) => (
-                                    <div 
-                                        key={topic} 
-                                        className="flex items-center bg-background border border-input rounded-full px-3 py-1 text-sm"
-                                    >
-                                        <span>{topic}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveTopic(topic)}
-                                            className="ml-2 text-muted-foreground hover:text-foreground"
-                                        >
-                                            ×
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
 
                         <Textarea
                             id="scriptTopic"
@@ -246,6 +224,40 @@ export function Script() {
                             onChange={(e) => setScriptTopic(e.target.value)}
                             className="min-h-[100px]"
                         />
+                        
+                        {/* Selected Topics Section */}
+                        <div className={`${selectedTopics.length > 0 ? 'block' : 'hidden'}`}>
+                            <div className="text-sm text-muted-foreground mb-2">Selected Topics:</div>
+                            <div className="flex flex-wrap gap-2">
+                                {selectedTopics.map((topic) => {
+                                    // Find the original suggestion to get its score
+                                    const originalSuggestion = trendingSuggestions.find(s => s.topic === topic);
+                                    const backgroundColor = originalSuggestion 
+                                        ? getScoreColor(originalSuggestion.score)
+                                        : 'hsl(var(--primary))';
+                                    
+                                    return (
+                                        <div 
+                                            key={topic} 
+                                            className="flex items-center rounded-full text-xs"
+                                            style={{
+                                                backgroundColor,
+                                                borderColor: backgroundColor,
+                                            }}
+                                        >
+                                            <span className="px-3 py-1 text-white">{topic}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveTopic(topic)}
+                                                className="pr-2 pl-0 text-white/80 hover:text-white"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
                         
                         {/* Trending Topics Section */}
                         <div className="mt-4">
