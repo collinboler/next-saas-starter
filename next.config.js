@@ -4,10 +4,7 @@ const nextConfig = {
   images: {
     domains: ['avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
   },
-  transpilePackages: ['lucide-react'],
-  experimental: {
-    optimizeCss: true // Enable CSS optimization
-  }
+  transpilePackages: ['lucide-react']
 };
 
 module.exports = nextConfig; 

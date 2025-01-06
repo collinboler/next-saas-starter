@@ -1,20 +1,23 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 
-export function useActionState<State, Payload>(
-  action: (payload: Payload) => Promise<State>,
-  initialState: State
-) {
-  const [state, setState] = useState<State>(initialState);
-  const [isPending, startTransition] = useTransition();
+export function useActionState<T, U>(
+  action: (data: U) => Promise<T>,
+  initialState: T
+): [T, (data: U) => Promise<void>, boolean] {
+  const [state, setState] = useState<T>(initialState);
+  const [pending, setPending] = useState(false);
 
-  const formAction = async (payload: Payload) => {
-    startTransition(async () => {
-      const result = await action(payload);
+  async function formAction(data: U) {
+    setPending(true);
+    try {
+      const result = await action(data);
       setState(result);
-    });
-  };
+    } finally {
+      setPending(false);
+    }
+  }
 
-  return [state, formAction, isPending] as const;
+  return [state, formAction, pending];
 } 
