@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { ActionState } from '@/lib/auth/middleware';
 
-export function useActionState<T, U>(
-  action: (data: U) => Promise<T>,
+export function useActionState<T extends ActionState, U>(
+  action: (data: U, formData: FormData) => Promise<T | void>,
   initialState: T
 ): [T, (data: U) => Promise<void>, boolean] {
   const [state, setState] = useState<T>(initialState);
@@ -12,8 +13,18 @@ export function useActionState<T, U>(
   async function formAction(data: U) {
     setPending(true);
     try {
-      const result = await action(data);
-      setState(result);
+      const formData = new FormData();
+      const form = document.querySelector('form');
+      if (form) {
+        const hiddenInputs = form.querySelectorAll<HTMLInputElement>('input[type="hidden"]');
+        hiddenInputs.forEach((input) => {
+          formData.append(input.name, input.value);
+        });
+      }
+      const result = await action(data, formData);
+      if (result) {
+        setState(result as T);
+      }
     } finally {
       setPending(false);
     }
