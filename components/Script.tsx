@@ -22,6 +22,73 @@ interface TrendingTopic {
 // Add type for trending category
 type TrendingCategory = 'topics' | 'hashtags' | 'creators';
 
+const FormattedText = ({ text }: { text: string }) => {
+    return (
+        <div className="whitespace-pre-wrap">
+            {text.split('\n').map((line, index) => {
+                const parts = [];
+                let currentText = '';
+                let i = 0;
+
+                // Check if line starts with ###
+                const isHeading = line.trim().startsWith('###');
+                const lineClass = isHeading ? "text-xl font-semibold" : "mb-2";
+
+                while (i < line.length) {
+                    if (line[i] === '*') {
+                        if (line[i + 1] === '*') {
+                            // Bold text
+                            if (currentText) {
+                                parts.push(currentText);
+                                currentText = '';
+                            }
+                            i += 2;
+                            let boldText = '';
+                            while (i < line.length && !(line[i] === '*' && line[i + 1] === '*')) {
+                                boldText += line[i];
+                                i++;
+                            }
+                            if (boldText) {
+                                parts.push(<strong key={`bold-${i}`}>{boldText}</strong>);
+                            }
+                            i += 2;
+                        } else {
+                            // Italic text
+                            if (currentText) {
+                                parts.push(currentText);
+                                currentText = '';
+                            }
+                            i++;
+                            let italicText = '';
+                            while (i < line.length && line[i] !== '*') {
+                                italicText += line[i];
+                                i++;
+                            }
+                            if (italicText) {
+                                parts.push(<em key={`italic-${i}`}>{italicText}</em>);
+                            }
+                            i++;
+                        }
+                    } else {
+                        currentText += line[i];
+                        i++;
+                    }
+                }
+
+                if (currentText) {
+                    parts.push(currentText);
+                }
+
+                return (
+                    <p key={index} className={lineClass}>
+                        {isHeading ? line.replace('###', '').trim() : parts}
+                    </p>
+                );
+            })}
+        </div>
+    );
+};
+
 export function Script() {
     const [currentStep, setCurrentStep] = useState(1);
     const [scriptTopic, setScriptTopic] = useState("");
@@ -29,6 +96,8 @@ export function Script() {
     const [additionalStyle, setAdditionalStyle] = useState("");
     const [loading, setLoading] = useState(false);
     const [generatedScript, setGeneratedScript] = useState("");
+    const [topicAnalysis, setTopicAnalysis] = useState("");
+    const [referenceAnalysis, setReferenceAnalysis] = useState("");
     const [visibleCount, setVisibleCount] = useState(3);
     const [trendingSuggestions, setTrendingSuggestions] = useState<TrendingTopic[]>([]);
     const [loadingSuggestions, setLoadingSuggestions] = useState(true);
@@ -41,6 +110,7 @@ export function Script() {
     const [trendingCategory, setTrendingCategory] = useState<TrendingCategory>('topics');
     const [trendingHashtags, setTrendingHashtags] = useState<TrendingTopic[]>([]);
     const [trendingCreators, setTrendingCreators] = useState<TrendingTopic[]>([]);
+    const [activeTab, setActiveTab] = useState<'script' | 'topic' | 'reference'>('script');
 
     useEffect(() => {
         const fetchTrendingData = async () => {
@@ -100,17 +170,6 @@ export function Script() {
         e.preventDefault();
         setLoading(true);
 
-        const finalMessage = {
-            role: "user",
-            content: `Topic: ${scriptTopic}
-            ${referenceContent ? `Reference Content: ${referenceContent}` : ''}
-            ${transcription ? `Video Analysis: ${transcription}` : ''}
-            ${additionalStyle ? `Style Preferences: ${additionalStyle}` : ''}`
-        };
-
-        // Add the console.log here
-        console.log("Final message being sent to assistant:", finalMessage);
-
         try {
             const response = await fetch("/api/generate-script", {
                 method: "POST",
@@ -125,6 +184,8 @@ export function Script() {
             });
             const data = await response.json();
             setGeneratedScript(data.script);
+            setTopicAnalysis(data.topicAnalysis || '');
+            setReferenceAnalysis(data.referenceAnalysis || '');
         } catch (error) {
             console.error("Error generating script:", error);
         }
@@ -477,59 +538,56 @@ export function Script() {
                         <div className="space-y-2">
                             <Input
                                 id="referenceContent"
-                                placeholder="Paste a TikTok video link or account @ here..."
+                                placeholder="Paste TikTok video URL"
                                 value={referenceContent}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                    setReferenceContent(e.target.value);
+                                    const newValue = e.target.value;
+                                    setReferenceContent(newValue);
                                     // Reset video and transcription when input changes
                                     setVideoUrl(null);
                                     setTranscription(null);
+                                    
+                                    // Auto-process if it's a TikTok URL
+                                    if (newValue.includes('tiktok.com')) {
+                                        handleVideoProcess(newValue);
+                                    }
                                 }}
                             />
-                            {referenceContent.includes('tiktok.com') && (
-                                <Button
-                                    type="button"
-                                    onClick={() => handleVideoProcess(referenceContent)}
-                                    disabled={processingVideo}
-                                    className="w-full"
-                                >
-                                    {processingVideo ? "Processing Video..." : "Process TikTok Video"}
-                                </Button>
-                            )}
+                            <Button 
+                                type="button"
+                                className="w-full"
+                                onClick={handleNextStep}
+                                disabled={referenceContent.includes('tiktok.com') && (processingVideo || !transcription)}
+                            >
+                                {processingVideo ? "Processing Video..." : "Next"}
+                            </Button>
                         </div>
                         <script async src="https://www.tiktok.com/embed.js"></script>
                         
                         {referenceContent.includes('tiktok.com') && (
-                    <div className="mt-4 space-y-4">
-                        {embedHtml ? (
-                            <div 
-                                className="relative aspect-video w-full"
-                                dangerouslySetInnerHTML={{ __html: embedHtml }}
-                            />
-                        ) : (
-                            <div className="w-full h-64 bg-gray-100 dark:bg-gray-900 rounded-lg flex items-center justify-center">
-                                <p className="text-gray-500">Loading TikTok embed...</p>
+                            <div className="mt-4 space-y-4">
+                                {embedHtml ? (
+                                    <div 
+                                        className="relative aspect-video w-full"
+                                        dangerouslySetInnerHTML={{ __html: embedHtml }}
+                                    />
+                                ) : (
+                                    <div className="w-full h-64 bg-gray-100 dark:bg-gray-900 rounded-lg flex items-center justify-center">
+                                        <p className="text-gray-500">Loading TikTok embed...</p>
+                                    </div>
+                                )}
+                                {transcription && (
+                                    <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                        <h3 className="text-sm font-medium mb-2">Video Transcription:</h3>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">{transcription}</p>
+                                    </div>
+                                )}
                             </div>
                         )}
-                        {transcription && (
-                            <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                                <h3 className="text-sm font-medium mb-2">Video Transcription:</h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">{transcription}</p>
-                            </div>
-                        )}
-                    </div>
-                )}
                         
                         <p className="text-xs text-gray-500">
                             This helps match the style of your favorite creators
                         </p>
-                        <Button 
-                            type="button" 
-                            className="w-full mt-4" 
-                            onClick={handleNextStep}
-                        >
-                            Next
-                        </Button>
                     </div>
                 )}
 
@@ -552,72 +610,52 @@ export function Script() {
             </form>
 
             {generatedScript && (
-    <div className="space-y-6">
-        <Card className="p-4">
-            <h2 className="text-xl font-semibold mb-2">Generated Script</h2>
-            <div className="whitespace-pre-wrap">
-                {generatedScript.split('\n').map((line, index) => {
-                    const parts = [];
-                    let currentText = '';
-                    let i = 0;
-
-                    // Check if line starts with ###
-                    const isHeading = line.trim().startsWith('###');
-                    const lineClass = isHeading ? "text-xl font-semibold" : "mb-2";
-
-                    while (i < line.length) {
-                        if (line[i] === '*') {
-                            if (line[i + 1] === '*') {
-                                // Bold text
-                                if (currentText) {
-                                    parts.push(currentText);
-                                    currentText = '';
-                                }
-                                i += 2;
-                                let boldText = '';
-                                while (i < line.length && !(line[i] === '*' && line[i + 1] === '*')) {
-                                    boldText += line[i];
-                                    i++;
-                                }
-                                if (boldText) {
-                                    parts.push(<strong key={`bold-${i}`}>{boldText}</strong>);
-                                }
-                                i += 2;
-                            } else {
-                                // Italic text
-                                if (currentText) {
-                                    parts.push(currentText);
-                                    currentText = '';
-                                }
-                                i++;
-                                let italicText = '';
-                                while (i < line.length && line[i] !== '*') {
-                                    italicText += line[i];
-                                    i++;
-                                }
-                                if (italicText) {
-                                    parts.push(<em key={`italic-${i}`}>{italicText}</em>);
-                                }
-                                i++;
-                            }
-                        } else {
-                            currentText += line[i];
-                            i++;
-                        }
-                    }
-
-                    if (currentText) {
-                        parts.push(currentText);
-                    }
-
-                    return (
-                        <p key={index} className={lineClass}>
-                            {isHeading ? line.replace('###', '').trim() : parts}
-                        </p>
-                    );
-                })}
-            </div>
-        </Card>
+                <div className="space-y-6">
+                    <Card className="p-4">
+                        <div className="flex border-b mb-4">
+                            <button
+                                className={`px-4 py-2 ${activeTab === 'script' ? 'border-b-2 border-orange-500 text-orange-500' : 'text-gray-500'}`}
+                                onClick={() => setActiveTab('script')}
+                            >
+                                Generated Script
+                            </button>
+                            <button
+                                className={`px-4 py-2 flex items-center gap-2 ${activeTab === 'topic' ? 'border-b-2 border-orange-500 text-orange-500' : 'text-gray-500'}`}
+                                onClick={() => setActiveTab('topic')}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="2" y1="12" x2="22" y2="12"/>
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                                </svg>
+                                Topic Analysis
+                            </button>
+                            {referenceAnalysis && (
+                                <button
+                                    className={`px-4 py-2 flex items-center gap-2 ${activeTab === 'reference' ? 'border-b-2 border-orange-500 text-orange-500' : 'text-gray-500'}`}
+                                    onClick={() => setActiveTab('reference')}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polygon points="23 7 16 12 23 17 23 7"/>
+                                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                                    </svg>
+                                    Reference Analysis
+                                </button>
+                            )}
+                        </div>
+                        
+                        {activeTab === 'script' && (
+                            <FormattedText text={generatedScript} />
+                        )}
+                        
+                        {activeTab === 'topic' && topicAnalysis && (
+                            <FormattedText text={topicAnalysis} />
+                        )}
+                        
+                        {activeTab === 'reference' && referenceAnalysis && (
+                            <FormattedText text={referenceAnalysis} />
+                        )}
+                    </Card>
                     
                     <div className="flex gap-2">
                         <Input

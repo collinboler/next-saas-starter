@@ -10,8 +10,8 @@ export async function POST(req: NextRequest) {
       throw new Error('PERPLEXITY_API_KEY is not set');
     }
 
-    // First, get content ideas and structure from Perplexity
-    const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+    // First call: Topic Analysis
+    const topicAnalysisResponse = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -23,24 +23,57 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: "system",
-            content: "You are a TikTok script writing expert. Create engaging, viral-worthy scripts that capture attention in the first 3 seconds."
+            content: "You are a TikTok trend analyst. You must provide real-time trending information about topics, hashtags, and creators. Format your response with ### for headings and ** ** for important terms."
           },
           {
             role: "user",
-            content: `Write a TikTok script about: ${topic}${reference ? `\nReference style: ${reference}` : ''}${style ? `\nStyle preferences: ${style}` : ''}`
+            content: `### Trend Analysis\nAnalyze these TikTok topics, hashtags, and creators:\n${topic}`
           }
         ]
       })
     });
 
-    if (!perplexityResponse.ok) {
-      throw new Error(`Perplexity API error: ${perplexityResponse.status}`);
+    if (!topicAnalysisResponse.ok) {
+      throw new Error(`Perplexity Topic Analysis error: ${topicAnalysisResponse.status}`);
     }
 
-    const perplexityData = await perplexityResponse.json();
-    const initialScript = perplexityData.choices[0].message.content;
+    const perplexityData = await topicAnalysisResponse.json();
+    const topicAnalysis = perplexityData.choices[0].message.content;
 
-    // Then, enhance it with OpenAI Assistant
+    // Second call: Reference Video Analysis (if provided)
+    let referenceAnalysis = '';
+    if (reference) {
+      const referenceAnalysisResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-sonar-small-128k-online",
+          messages: [
+            {
+              role: "system",
+              content: "You are a TikTok video analyst. Analyze the style, format, and content of reference videos. Format your response with ### for headings and ** ** for important terms."
+            },
+            {
+              role: "user",
+              content: `### Reference Video Analysis\nAnalyze this TikTok video's style and content:\n${reference}`
+            }
+          ]
+        })
+      });
+
+      if (!referenceAnalysisResponse.ok) {
+        throw new Error(`Perplexity Reference Analysis error: ${referenceAnalysisResponse.status}`);
+      }
+
+      const referenceAnalysisData = await referenceAnalysisResponse.json();
+      referenceAnalysis = referenceAnalysisData.choices[0].message.content;
+    }
+
+    // Generate script with OpenAI using both analyses
     const assistantResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -48,29 +81,32 @@ export async function POST(req: NextRequest) {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: "gpt-4-1106-preview",
+        model: "gpt-4-turbo-preview",
         messages: [
           {
             role: "system",
-            content: "You are a TikTok script enhancement expert. Your job is to take initial scripts and enhance them with hooks, transitions, and viral elements."
+            content: "You are a TikTok script enhancement expert. Your job is to create a script that is engaging, viral-worthy, and captures attention in the first 3 seconds."
           },
           {
             role: "user",
-            content: `Enhance this TikTok script with better hooks, transitions, and viral elements while maintaining its core message:\n\n${initialScript}`
+            content: `Based on these analyses:\n\nTopic Analysis:\n${topicAnalysis}\n\nReference Analysis:\n${referenceAnalysis}\n\nCreate a TikTok script about: ${topic}${style ? `\nStyle preferences: ${style}` : ''}`
           }
         ]
       })
     });
 
     if (!assistantResponse.ok) {
-      throw new Error(`Assistant API error: ${assistantResponse.status}`);
+      throw new Error(`OpenAI API error: ${assistantResponse.status}`);
     }
 
     const assistantData = await assistantResponse.json();
-    const enhancedScript = assistantData.choices[0].message.content;
+    const script = assistantData.choices[0].message.content;
 
-    return new Response(JSON.stringify({ script: enhancedScript }), {
-      headers: { 'Content-Type': 'application/json' }
+    // Return separate analyses
+    return Response.json({ 
+      script, 
+      topicAnalysis,
+      referenceAnalysis 
     });
   } catch (error) {
     console.error('Error in /api/generate-script:', error);
