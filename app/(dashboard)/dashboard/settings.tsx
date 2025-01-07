@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { customerPortalAction } from '@/lib/payments/actions';
-import { useActionState } from 'react';
+import { useFormState } from 'react-dom';
 import { TeamDataWithMembers, User } from '@/lib/db/schema';
 import { removeTeamMember } from '@/app/(login)/actions';
 import { InviteTeamMember } from './invite-team';
@@ -15,10 +15,10 @@ type ActionState = {
 };
 
 export function Settings({ teamData }: { teamData: TeamDataWithMembers }) {
-  const [removeState, removeAction, isRemovePending] = useActionState<
-    ActionState,
-    FormData
-  >(removeTeamMember, { error: '', success: '' });
+  const [removeState, removeAction] = useFormState<ActionState, FormData>(
+    removeTeamMember,
+    { error: '', success: '' }
+  );
 
   const getUserDisplayName = (user: Pick<User, 'id' | 'name' | 'email'>) => {
     return user.name || user.email || 'Unknown User';
@@ -88,13 +88,8 @@ export function Settings({ teamData }: { teamData: TeamDataWithMembers }) {
                 {index > 1 ? (
                   <form action={removeAction}>
                     <input type="hidden" name="memberId" value={member.id} />
-                    <Button
-                      type="submit"
-                      variant="outline"
-                      size="sm"
-                      disabled={isRemovePending}
-                    >
-                      {isRemovePending ? 'Removing...' : 'Remove'}
+                    <Button type="submit" variant="outline" size="sm">
+                      Remove
                     </Button>
                   </form>
                 ) : null}

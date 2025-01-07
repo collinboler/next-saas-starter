@@ -9,15 +9,13 @@ import { Label } from '@/components/ui/label';
 import { CircleIcon, Loader2 } from 'lucide-react';
 import { signIn, signUp } from './actions';
 import { ActionState } from '@/lib/auth/middleware';
-import { startTransition } from 'react';
-import { useActionState } from '@/lib/hooks/use-action-state';
 
 export function Login({ mode = 'signin' }: { mode?: 'signin' | 'signup' }) {
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect');
   const priceId = searchParams.get('priceId');
   const inviteId = searchParams.get('inviteId');
-  const [state, formAction, pending] = useFormState<ActionState, FormData>(
+  const [state, formAction] = useFormState<ActionState, FormData>(
     mode === 'signin' ? signIn : signUp,
     { error: '' }
   );
@@ -92,14 +90,8 @@ export function Login({ mode = 'signin' }: { mode?: 'signin' | 'signup' }) {
               <Button
                 type="submit"
                 className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-                disabled={pending}
               >
-                {pending ? (
-                  <>
-                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                    Loading...
-                  </>
-                ) : mode === 'signin' ? (
+                {mode === 'signin' ? (
                   'Sign in'
                 ) : (
                   'Sign up'

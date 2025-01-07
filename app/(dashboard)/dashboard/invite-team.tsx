@@ -12,7 +12,7 @@ import {
 import { Loader2, PlusCircle } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { useActionState } from 'react';
+import { useFormState } from 'react-dom';
 import { inviteTeamMember } from '@/app/(login)/actions';
 import { useUser } from '@/lib/auth';
 
@@ -24,10 +24,10 @@ type ActionState = {
 export function InviteTeamMember() {
   const { user } = useUser();
   const isOwner = user?.role === 'owner';
-  const [inviteState, inviteAction, isInvitePending] = useActionState<
-    ActionState,
-    FormData
-  >(inviteTeamMember, { error: '', success: '' });
+  const [inviteState, inviteAction] = useFormState<ActionState, FormData>(
+    inviteTeamMember,
+    { error: '', success: '' }
+  );
 
   return (
     <Card>
@@ -74,19 +74,10 @@ export function InviteTeamMember() {
           <Button
             type="submit"
             className="bg-orange-500 hover:bg-orange-600 text-white"
-            disabled={isInvitePending || !isOwner}
+            disabled={!isOwner}
           >
-            {isInvitePending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Inviting...
-              </>
-            ) : (
-              <>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Invite Member
-              </>
-            )}
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Invite Member
           </Button>
         </form>
       </CardContent>
