@@ -204,7 +204,9 @@ export function Script() {
 
             const data = await response.json();
             if (data.transcription) {
-                setTranscription(data.transcription);
+                // Extract just the transcription part from the enriched response
+                const transcriptionOnly = data.transcription.split('Transcription:')[1]?.trim() || data.transcription;
+                setTranscription(transcriptionOnly);
             }
         } catch (error) {
             console.error('Error processing video:', error);
@@ -267,7 +269,7 @@ export function Script() {
             <form onSubmit={handleSubmit} className="space-y-6">
                 {currentStep === 1 && (
                     <div className="space-y-4">
-                        <Label htmlFor="scriptTopic">1. What's your script topic/idea?</Label>
+                        <Label htmlFor="scriptTopic"><b>[1/3]</b> What's your video about?</Label>
 
                         <Textarea
                             id="scriptTopic"
@@ -338,18 +340,30 @@ export function Script() {
                         <div className="mt-4">
                             <div className="flex items-center justify-between gap-2 mb-4">
                                 <div className="flex items-center gap-2">
+                                    <span className="text-sm">Trending</span>
                                     <select
                                         value={trendingCategory}
                                         onChange={(e) => {
                                             setTrendingCategory(e.target.value as TrendingCategory);
-                                            setVisibleCount(3); // Reset visible count when changing category
+                                            setVisibleCount(3);
                                         }}
-                                        className="h-9 w-[180px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                     >
-                                        <option value="topics">Trending Topics</option>
-                                        <option value="hashtags">Trending Hashtags</option>
-                                        <option value="creators">Trending Creators</option>
+                                        <option value="topics">Topics</option>
+                                        <option value="hashtags">Hashtags</option>
+                                        <option value="creators">Creators</option>
                                     </select>
+                                    <span className="text-sm">on</span>
+                                    <span className="font-bold flex items-center gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="inline-block">
+                                            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                                        </svg>
+                                        TikTok
+                                    </span>
+                                    <span className="text-sm">in</span>
+                                    <span className="font-bold flex items-center gap-1">
+                                        USA 🇺🇸
+                                    </span>
 
                                     <TooltipProvider>
                                         <Tooltip>
@@ -357,7 +371,7 @@ export function Script() {
                                                 <InfoIcon className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help" />
                                             </TooltipTrigger>
                                             <TooltipContent className="max-w-xs">
-                                                <p>These are the current top TikTok searched terms right now in the United States. More support is coming for other countries soon.</p>
+                                                <p>Support for more countries and platforms coming soon.</p>
                                             </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
@@ -458,7 +472,7 @@ export function Script() {
                 {currentStep === 2 && (
                     <div className="space-y-4">
                         <Label htmlFor="referenceContent">
-                            2. Want to reference a specific video or account style?
+                            <b>[2/3]</b> Input TikTok Video URL for style reference <i>(Optional)</i>
                         </Label>
                         <div className="space-y-2">
                             <Input
@@ -522,7 +536,7 @@ export function Script() {
                 {currentStep === 3 && !generatedScript && (
                     <div className="space-y-2">
                         <Label htmlFor="additionalStyle">
-                            3. Any additional style preferences? (Optional)
+                            <b>[3/3]</b> Additional notes? (Optional)
                         </Label>
                         <Textarea
                             id="additionalStyle"
