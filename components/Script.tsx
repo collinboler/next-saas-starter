@@ -111,6 +111,7 @@ export function Script() {
     const [trendingHashtags, setTrendingHashtags] = useState<TrendingTopic[]>([]);
     const [trendingCreators, setTrendingCreators] = useState<TrendingTopic[]>([]);
     const [activeTab, setActiveTab] = useState<'script' | 'topic' | 'reference'>('script');
+    const [videoMetadata, setVideoMetadata] = useState<{ author: string; caption: string } | null>(null);
 
     useEffect(() => {
         const fetchTrendingData = async () => {
@@ -237,6 +238,10 @@ export function Script() {
             
             const oembedData = await oembedResponse.json();
             setEmbedHtml(oembedData.html);
+            setVideoMetadata({
+                author: oembedData.author_name || '',
+                caption: oembedData.title || ''
+            });
 
             // Extract additional metadata from oEmbed response
             const metadata = {
@@ -326,7 +331,7 @@ export function Script() {
 
     return (
         <div className="container mx-auto p-4 max-w-2xl">
-            <h1 className="text-2xl font-bold mb-6">TikTok Script Generator</h1>
+            <h1 className="text-2xl font-bold mb-6">Script Generator</h1>
             <form onSubmit={handleSubmit} className="space-y-6">
                 {currentStep === 1 && (
                     <div className="space-y-4">
@@ -612,6 +617,29 @@ export function Script() {
             {generatedScript && (
                 <div className="space-y-6">
                     <Card className="p-4">
+                        <div className="mb-6">
+                            <h2 className="text-lg font-semibold mb-2">TikTok Video Script</h2>
+                            <div className="text-sm text-muted-foreground space-y-1">
+                                <p><span className="font-medium">Topic:</span> {scriptTopic}</p>
+                                {referenceContent && videoMetadata && (
+                                    <p>
+                                        <span className="font-medium">Reference:</span>{' '}
+                                        <a 
+                                            href={referenceContent}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-blue-500 hover:text-blue-600 hover:underline"
+                                        >
+                                            {`@${videoMetadata.author}: ${videoMetadata.caption}`}
+                                        </a>
+                                    </p>
+                                )}
+                                {additionalStyle && (
+                                    <p><span className="font-medium">Additional Notes:</span> {additionalStyle}</p>
+                                )}
+                            </div>
+                        </div>
+
                         <div className="flex border-b mb-4">
                             <button
                                 className={`px-4 py-2 ${activeTab === 'script' ? 'border-b-2 border-orange-500 text-orange-500' : 'text-gray-500'}`}
