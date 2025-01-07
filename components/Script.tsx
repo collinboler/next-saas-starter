@@ -138,7 +138,9 @@ export function Script() {
     }, []);
 
     const handleShowMore = () => {
-        setVisibleCount(prev => Math.min(prev + 8, trendingSuggestions.length));
+        const increment = 8;
+        const selectedCount = selectedTopics.length;
+        setVisibleCount(prev => Math.min(prev + increment, getCurrentTotalCount() - selectedCount));
     };
 
     const visibleSuggestions = trendingSuggestions.slice(0, visibleCount);
@@ -305,16 +307,19 @@ export function Script() {
 
     // Get current trending items based on category
     const getCurrentTrendingItems = () => {
+        const selectedCount = selectedTopics.length;
+        const adjustedVisibleCount = visibleCount + selectedCount; // Increase visible count by number of selected items
+        
         switch (trendingCategory) {
             case 'hashtags':
-                return trendingHashtags.slice(0, visibleCount);
+                return trendingHashtags.slice(0, adjustedVisibleCount);
             case 'creators':
-                return trendingCreators.slice(0, visibleCount).map(item => ({
+                return trendingCreators.slice(0, adjustedVisibleCount).map(item => ({
                     ...item,
                     topic: `@${item.topic}`
                 }));
             default:
-                return trendingSuggestions.slice(0, visibleCount);
+                return trendingSuggestions.slice(0, adjustedVisibleCount);
         }
     };
 
@@ -333,7 +338,7 @@ export function Script() {
     // Filter selected items from current category
     const filteredVisibleItems = getCurrentTrendingItems().filter(
         item => !selectedTopics.includes(item.topic)
-    );
+    ).slice(0, visibleCount); // Limit to original visible count after filtering
 
     return (
         <div className="container mx-auto p-4 max-w-2xl">
