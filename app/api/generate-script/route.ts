@@ -23,11 +23,11 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: "system",
-            content: "You are a TikTok trend analyst. You must provide real-time trending information about topics, hashtags, and creators. Format your response with ### for headings and ** ** for important terms."
+            content: "You are a TikTok trend analyst. You must provide real-time trending information about the user's input. Format your response with ### for headings and ** ** for important terms."
           },
           {
             role: "user",
-            content: `### Trend Analysis\nAnalyze these TikTok topics, hashtags, and creators:\n${topic}`
+            content: `Provide real-time (right now, not two days ago) trending information as if you are providing everything a video script writer (who doesn't have access to internet) needs to know before making a TikTok script. You aren't making the script yourself, but you're explaining the following input:\n${topic}`
           }
         ]
       })
@@ -55,11 +55,11 @@ export async function POST(req: NextRequest) {
           messages: [
             {
               role: "system",
-              content: "You are a TikTok video analyst. Analyze the style, format, and content of reference videos. Format your response with ### for headings and ** ** for important terms."
+              content: "You are a TikTok video analyst. Analyze the style, format, and content of reference video. Format your response with ### for headings and ** ** for important terms."
             },
             {
               role: "user",
-              content: `### Reference Video Analysis\nAnalyze this TikTok video's style and content:\n${reference}`
+              content: ` Give a break down about the general style of the reference video if it is provided (is it a story video, how does it convey it's call to action and hook if present, what value does it provide, is it a vlog, stream of consciousness, news story, podcast style, etc) as well as tonality, length, captions, account information,  etc, and any other information you can provide. Anything after the colon will be the details of the reference video (this will be blank if not provided, pay particular attention to the transcription. You goal should be giving enough input so that someone can replicate the same style of content and script as the provided video and transcript. Here's the video information: \n${reference}`
             }
           ]
         })
