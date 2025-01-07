@@ -630,7 +630,7 @@ export function Script() {
                                 </svg>
                                 Topic Analysis
                             </button>
-                            {referenceAnalysis && (
+                            {referenceAnalysis && embedHtml && (
                                 <button
                                     className={`px-4 py-2 flex items-center gap-2 ${activeTab === 'reference' ? 'border-b-2 border-orange-500 text-orange-500' : 'text-gray-500'}`}
                                     onClick={() => setActiveTab('reference')}
@@ -652,8 +652,14 @@ export function Script() {
                             <FormattedText text={topicAnalysis} />
                         )}
                         
-                        {activeTab === 'reference' && referenceAnalysis && (
-                            <FormattedText text={referenceAnalysis} />
+                        {activeTab === 'reference' && referenceAnalysis && embedHtml && (
+                            <div className="space-y-6">
+                                <div 
+                                    className="relative aspect-video w-full"
+                                    dangerouslySetInnerHTML={{ __html: embedHtml }}
+                                />
+                                <FormattedText text={referenceAnalysis} />
+                            </div>
                         )}
                     </Card>
                     
