@@ -162,9 +162,12 @@ export function Script() {
     const handleVideoProcess = async (url: string) => {
         setProcessingVideo(true);
         try {
+            // Clean up the TikTok URL by removing query parameters
+            const cleanUrl = url.split('?')[0];
+            
             // First get the oEmbed data
             const oembedResponse = await fetch(
-                `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`
+                `https://www.tiktok.com/oembed?url=${encodeURIComponent(cleanUrl)}`
             );
             
             if (!oembedResponse.ok) {
@@ -189,7 +192,7 @@ export function Script() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ 
-                    url,
+                    url: cleanUrl,
                     metadata 
                 }),
             });
