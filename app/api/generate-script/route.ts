@@ -43,6 +43,16 @@ export async function POST(req: NextRequest) {
     // Second call: Reference Video Analysis (if provided)
     let referenceAnalysis = '';
     if (reference) {
+      // Structure the reference data
+      const referenceData = {
+        url: reference,
+        caption: '',
+        username: '',
+        soundTitle: '',
+        transcription: '',
+        ...reference // This will override the defaults with any provided data
+      };
+
       const referenceAnalysisResponse = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
         headers: {
@@ -59,7 +69,21 @@ export async function POST(req: NextRequest) {
             },
             {
               role: "user",
-              content: ` Give a break down about the general style of the reference video if it is provided (is it a story video, how does it convey it's call to action and hook if present, what value does it provide, is it a vlog, stream of consciousness, news story, podcast style, etc) as well as tonality, length, captions, account information,  etc, and any other information you can provide. Anything after the colon will be the details of the reference video (this will be blank if not provided, pay particular attention to the transcription. You goal should be giving enough input so that someone can replicate the same style of content and script as the provided video and transcript. Here's the video information: \n${reference}`
+              content: `Analyze this TikTok video's content and structure:
+
+              Caption: ${referenceData.caption}
+              Creator: ${referenceData.username}
+              Sound: ${referenceData.soundTitle}
+              Transcription: ${referenceData.transcription}
+
+              Please analyze:
+              1. The hook and how it grabs attention
+              2. The overall structure and flow
+              3. The call to action and engagement strategy
+              4. The caption's effectiveness and hashtag usage
+              5. How the sound/music choice enhances the content
+              
+              Provide specific insights on how to replicate this style while maintaining originality.`
             }
           ]
         })
@@ -89,7 +113,7 @@ export async function POST(req: NextRequest) {
           },
           {
             role: "user",
-            content: `Based on these analyses:\n\nTopic Analysis:\n${topicAnalysis}\n\nReference Analysis:\n${referenceAnalysis}\n\nCreate a TikTok script about: ${topic}${style ? `\nStyle preferences: ${style}` : ''}`
+            content: `Create a s:\n\nTopic Analysis:\n${topicAnalysis}\n\nReference Analysis:\n${referenceAnalysis}\n\nCreate a TikTok script about: ${topic}${style ? `\nStyle preferences: ${style}` : ''}`
           }
         ]
       })

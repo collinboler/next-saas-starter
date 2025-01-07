@@ -179,7 +179,13 @@ export function Script() {
                 },
                 body: JSON.stringify({
                     topic: scriptTopic,
-                    reference: referenceContent,
+                    reference: referenceContent ? {
+                        url: referenceContent,
+                        caption: videoMetadata?.caption || '',
+                        username: videoMetadata?.author || '',
+                        soundTitle: '',  // We'll get this from the video processing
+                        transcription: transcription || ''
+                    } : '',
                     style: additionalStyle
                 }),
             });
@@ -341,8 +347,17 @@ export function Script() {
                             id="scriptTopic"
                             placeholder="Enter your script topic or idea..."
                             value={scriptTopic}
-                            onChange={(e) => setScriptTopic(e.target.value)}
-                            className="min-h-[100px]"
+                            onChange={(e) => {
+                                setScriptTopic(e.target.value);
+                                // Auto-resize with max height
+                                e.target.style.height = 'auto';
+                                const newHeight = e.target.scrollHeight;
+                                const maxHeight = window.innerHeight * 0.4; // 40% of viewport height
+                                e.target.style.height = `${Math.min(newHeight, maxHeight)}px`;
+                                e.target.style.overflowY = newHeight > maxHeight ? 'auto' : 'hidden';
+                            }}
+                            className="min-h-[40px] max-h-[40vh] transition-all duration-200"
+                            rows={1}
                         />
                         
                         {/* Selected Topics Section */}
