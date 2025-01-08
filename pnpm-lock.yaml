@@ -47,6 +47,9 @@ importers:
       '@types/bcryptjs':
         specifier: ^2.4.6
         version: 2.4.6
+      '@types/js-cookie':
+        specifier: ^3.0.6
+        version: 3.0.6
       '@types/node':
         specifier: ^22.8.6
         version: 22.8.6
@@ -89,6 +92,9 @@ importers:
       jose:
         specifier: ^5.9.6
         version: 5.9.6
+      js-cookie:
+        specifier: ^3.0.5
+        version: 3.0.5
       lucide-react:
         specifier: ^0.454.0
         version: 0.454.0(react@19.0.0-rc-cd22717c-20241013)
@@ -1142,6 +1148,9 @@ packages:
 
   '@types/bcryptjs@2.4.6':
     resolution: {integrity: sha512-9xlo6R2qDs5uixm0bcIqCeMCE6HiQsIyel9KQySStiyqNl2tnj2mP3DX1Nf56MD6KMenNNlBBsy3LJ7gUEQPXQ==}
+
+  '@types/js-cookie@3.0.6':
+    resolution: {integrity: sha512-wkw9yd1kEXOPnvEeEV1Go1MmxtBJL0RR79aOTAApecWFVu7w0NNXNqhcWgvw2YgZDYadliXkl14pa3WXw5jlCQ==}
 
   '@types/node-fetch@2.6.12':
     resolution: {integrity: sha512-8nneRWKCg3rMtF69nLQJnOYUcbafYeFSjqkw3jCRLsqkWFlHaoQrr5mXmofFGOx3DKn7UfmBMyov8ySvLRVldA==}
@@ -3387,6 +3396,8 @@ snapshots:
   '@trysound/sax@0.2.0': {}
 
   '@types/bcryptjs@2.4.6': {}
+
+  '@types/js-cookie@3.0.6': {}
 
   '@types/node-fetch@2.6.12':
     dependencies:

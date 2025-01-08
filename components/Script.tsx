@@ -13,6 +13,8 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAuth, SignInButton } from "@clerk/nextjs";
+import Cookies from 'js-cookie';
 
 interface TrendingTopic {
     topic: string;
@@ -90,6 +92,7 @@ const FormattedText = ({ text }: { text: string }) => {
 };
 
 export function Script() {
+    const { isSignedIn } = useAuth();
     const [currentStep, setCurrentStep] = useState(1);
     const [scriptTopic, setScriptTopic] = useState("");
     const [referenceContent, setReferenceContent] = useState("");
@@ -112,6 +115,42 @@ export function Script() {
     const [trendingCreators, setTrendingCreators] = useState<TrendingTopic[]>([]);
     const [activeTab, setActiveTab] = useState<'script' | 'topic' | 'reference'>('script');
     const [videoMetadata, setVideoMetadata] = useState<{ author: string; caption: string } | null>(null);
+    const [shouldGenerateOnSignIn, setShouldGenerateOnSignIn] = useState(false);
+
+    // Load saved inputs from cookies on mount
+    useEffect(() => {
+        const savedInputs = {
+            topic: Cookies.get('scriptTopic'),
+            reference: Cookies.get('referenceContent'),
+            style: Cookies.get('additionalStyle'),
+            transcription: Cookies.get('transcription'),
+            embedHtml: Cookies.get('embedHtml'),
+            videoMetadata: Cookies.get('videoMetadata'),
+        };
+
+        if (savedInputs.topic) setScriptTopic(savedInputs.topic);
+        if (savedInputs.reference) setReferenceContent(savedInputs.reference);
+        if (savedInputs.style) setAdditionalStyle(savedInputs.style);
+        if (savedInputs.transcription) setTranscription(savedInputs.transcription);
+        if (savedInputs.embedHtml) setEmbedHtml(savedInputs.embedHtml);
+        if (savedInputs.videoMetadata) setVideoMetadata(JSON.parse(savedInputs.videoMetadata));
+
+        // If we have saved inputs and user just signed in, trigger generation
+        if (isSignedIn && shouldGenerateOnSignIn && savedInputs.topic) {
+            setShouldGenerateOnSignIn(false);
+            handleSubmit(new Event('submit') as any);
+        }
+    }, [isSignedIn]);
+
+    // Save inputs to cookies when they change
+    useEffect(() => {
+        if (scriptTopic) Cookies.set('scriptTopic', scriptTopic);
+        if (referenceContent) Cookies.set('referenceContent', referenceContent);
+        if (additionalStyle) Cookies.set('additionalStyle', additionalStyle);
+        if (transcription) Cookies.set('transcription', transcription);
+        if (embedHtml) Cookies.set('embedHtml', embedHtml);
+        if (videoMetadata) Cookies.set('videoMetadata', JSON.stringify(videoMetadata));
+    }, [scriptTopic, referenceContent, additionalStyle, transcription, embedHtml, videoMetadata]);
 
     useEffect(() => {
         const fetchTrendingData = async () => {
@@ -171,6 +210,30 @@ export function Script() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!isSignedIn) {
+            // Create a URL with all the input parameters
+            const params = new URLSearchParams({
+                topic: scriptTopic,
+                style: additionalStyle || '',
+                reference: referenceContent || '',
+                transcription: transcription || '',
+                embedHtml: embedHtml || '',
+                videoMetadata: videoMetadata ? JSON.stringify(videoMetadata) : '',
+                shouldGenerate: 'true'
+            });
+            
+            const redirectUrl = `/viralgo?${params.toString()}`;
+            return (
+                <SignInButton mode="modal">
+                    <Button className="w-full" onClick={() => {
+                        // Store the redirect URL in localStorage
+                        localStorage.setItem('scriptGeneratorRedirect', redirectUrl);
+                    }}>
+                        Generate Script {scriptTopic ? `about "${scriptTopic}"` : ''}
+                    </Button>
+                </SignInButton>
+            );
+        }
         setLoading(true);
 
         try {
@@ -202,6 +265,9 @@ export function Script() {
     };
 
     const handleRemix = async () => {
+        if (!isSignedIn) {
+            return;
+        }
         if (!remixInput.trim()) return;
         setLoading(true);
         try {
@@ -339,6 +405,41 @@ export function Script() {
     const filteredVisibleItems = getCurrentTrendingItems().filter(
         item => !selectedTopics.includes(item.topic)
     ).slice(0, visibleCount); // Limit to original visible count after filtering
+
+    // Add effect to check URL parameters and localStorage redirect
+    useEffect(() => {
+        if (isSignedIn) {
+            // Check localStorage first
+            const redirectUrl = localStorage.getItem('scriptGeneratorRedirect');
+            if (redirectUrl) {
+                localStorage.removeItem('scriptGeneratorRedirect');
+                window.location.href = redirectUrl;
+                return;
+            }
+
+            // Then check URL parameters
+            if (window.location.search) {
+                const params = new URLSearchParams(window.location.search);
+                if (params.get('shouldGenerate') === 'true') {
+                    // Set all the states from URL parameters
+                    setScriptTopic(params.get('topic') || '');
+                    setAdditionalStyle(params.get('style') || '');
+                    setReferenceContent(params.get('reference') || '');
+                    setTranscription(params.get('transcription') || '');
+                    setEmbedHtml(params.get('embedHtml') || '');
+                    if (params.get('videoMetadata')) {
+                        setVideoMetadata(JSON.parse(params.get('videoMetadata') || '{}'));
+                    }
+                    
+                    // Clean the URL
+                    window.history.replaceState({}, '', '/viralgo');
+                    
+                    // Trigger generation
+                    handleSubmit(new Event('submit') as any);
+                }
+            }
+        }
+    }, [isSignedIn]);
 
     return (
         <div className="container mx-auto p-4 max-w-2xl">
@@ -627,9 +728,22 @@ export function Script() {
                             value={additionalStyle}
                             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAdditionalStyle(e.target.value)}
                         />
-                        <Button type="submit" className="w-full mt-4" disabled={loading}>
-                            {loading ? "Generating..." : "Generate Script"}
-                        </Button>
+                        {!isSignedIn ? (
+                            <div className="space-y-4">
+                                <SignInButton mode="modal">
+                                    <Button className="w-full">
+                                        Generate Script {scriptTopic ? `about "${scriptTopic}"` : ''}
+                                    </Button>
+                                </SignInButton>
+                                <p className="text-sm text-muted-foreground text-center">
+                                    Sign in to generate your script - your inputs will be preserved
+                                </p>
+                            </div>
+                        ) : (
+                            <Button type="submit" className="w-full mt-4" disabled={loading}>
+                                {loading ? "Generating..." : "Generate Script"}
+                            </Button>
+                        )}
                     </div>
                 )}
             </form>
