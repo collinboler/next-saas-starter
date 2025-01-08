@@ -183,7 +183,7 @@ export default function HomePage() {
                 <Textarea
                   id="scriptTopic"
                   placeholder="Enter your script topic or idea..."
-                  className="min-h-[100px] text-lg resize-none"
+                  className="min-h-[60px] text-lg resize-none"
                   value={scriptTopic}
                   onChange={(e) => setScriptTopic(e.target.value)}
                 />
@@ -244,8 +244,22 @@ export default function HomePage() {
                   </div>
                 </div>
 
+                <SignInButton mode="modal">
+                  <Button 
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white text-lg py-6"
+                    disabled={!scriptTopic.trim() || (showReference && !referenceVideo.trim())}
+                    onClick={() => {
+                      handleGenerateClick();
+                      router.push('/viralgo');
+                    }}
+                  >
+                    Generate Script
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </SignInButton>
+
                 {/* Trending Section */}
-                <div className="mt-4">
+                <div className="mt-8">
                   <div className="flex items-center justify-between gap-2 mb-4">
                     <div className="flex items-center gap-2">
                       <span className="text-sm">Add Trending</span>
@@ -388,20 +402,6 @@ export default function HomePage() {
                   />
                 </div>
               )}
-
-              <SignInButton mode="modal">
-                <Button 
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white text-lg py-6"
-                  disabled={!scriptTopic.trim() || (showReference && !referenceVideo.trim())}
-                  onClick={() => {
-                    handleGenerateClick();
-                    router.push('/viralgo');
-                  }}
-                >
-                  Generate Script
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </SignInButton>
             </div>
           </div>
         </div>
