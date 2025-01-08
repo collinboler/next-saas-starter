@@ -1,5 +1,12 @@
 'use client';
-
+import {
+  ClerkProvider,
+  SignInButton,
+  SignedIn,
+  SignedOut,
+  UserButton
+} from '@clerk/nextjs'
+// import './globals.css'
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -16,24 +23,40 @@ import { signOut } from '@/app/(login)/actions';
 import { useRouter } from 'next/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
 
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <ClerkProvider>
+      <html lang="en">
+        <body>
+          {/* <SignedOut>
+            <SignInButton />
+          </SignedOut>
+          <SignedIn>
+            
+          </SignedIn> */}
+          <section className="flex flex-col min-h-screen">
+       <Header />
+       <main className="flex-grow">{children}</main>
+    </section>
+        </body>
+      </html>
+    </ClerkProvider>
+  )
+}
+
 function Header() {
   const [mounted, setMounted] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, setUser } = useUser();
-  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  async function handleSignOut() {
-    setUser(null);
-    await signOut();
-    router.push('/');
-  }
-
   if (!mounted) {
-    return null; // or a skeleton loader
+    return null;
   }
 
   return (
@@ -57,44 +80,17 @@ function Header() {
             Pricing
           </Link>
           <ThemeToggle />
-          {user ? (
-            <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-              <DropdownMenuTrigger asChild>
-                <Avatar className="cursor-pointer size-9">
-                  <AvatarImage alt={user.name || ''} />
-                  <AvatarFallback>
-                    {user.email
-                      .split(' ')
-                      .map((n) => n[0])
-                      .join('')}
-                  </AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="flex flex-col gap-1">
-                <DropdownMenuItem className="cursor-pointer">
-                  <Link href="/dashboard" className="flex w-full items-center">
-                    <Home className="mr-2 h-4 w-4" />
-                    <span>Dashboard</span>
-                  </Link>
-                </DropdownMenuItem>
-                <form action={handleSignOut} className="w-full">
-                  <button type="submit" className="flex w-full">
-                    <DropdownMenuItem className="w-full flex-1 cursor-pointer">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Sign out</span>
-                    </DropdownMenuItem>
-                  </button>
-                </form>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
+          <SignedIn>
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
+          <SignedOut>
             <Button
               asChild
               className="bg-black hover:bg-gray-800 text-white text-sm px-4 py-2 rounded-full"
             >
-              <Link href="/sign-up">Sign Up</Link>
+              <SignInButton mode="modal" />
             </Button>
-          )}
+          </SignedOut>
         </div>
       </div>
     </header>
@@ -113,12 +109,12 @@ function Footer() {
   );
 }
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-  return (
-    <section className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-grow">{children}</main>
+// export default function Layout({ children }: { children: React.ReactNode }) {
+//   return (
+//     <section className="flex flex-col min-h-screen">
+//       <Header />
+//       <main className="flex-grow">{children}</main>
  
-    </section>
-  );
-}
+//     </section>
+//   );
+// }
