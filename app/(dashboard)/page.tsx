@@ -1,116 +1,407 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CreditCard, Database } from 'lucide-react';
-import { Terminal } from './terminal';
+import { ArrowRight, CreditCard, Database, InfoIcon } from 'lucide-react';
 import Link from 'next/link';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { SignInButton, useAuth } from '@clerk/nextjs';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+interface TrendingTopic {
+  topic: string;
+  score: number;
+}
+
+type TrendingCategory = 'topics' | 'hashtags' | 'creators';
 
 export default function HomePage() {
+  const { isLoaded, userId } = useAuth();
+  const router = useRouter();
+  const [showReference, setShowReference] = useState(false);
+  const [scriptTopic, setScriptTopic] = useState('');
+  const [referenceVideo, setReferenceVideo] = useState('');
+  const [trendingCategory, setTrendingCategory] = useState<TrendingCategory>('topics');
+  const [trendingSuggestions, setTrendingSuggestions] = useState<TrendingTopic[]>([]);
+  const [trendingHashtags, setTrendingHashtags] = useState<TrendingTopic[]>([]);
+  const [trendingCreators, setTrendingCreators] = useState<TrendingTopic[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(3);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchTrendingData = async () => {
+      try {
+        const response = await fetch('/api/trending-topics');
+        const data = await response.json();
+        if (data.topics) setTrendingSuggestions(data.topics);
+        if (data.hashtags) setTrendingHashtags(data.hashtags);
+        if (data.creators) setTrendingCreators(data.creators);
+      } catch (error) {
+        console.error('Error fetching trending data:', error);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    };
+
+    fetchTrendingData();
+  }, []);
+
+  const handleGenerateClick = () => {
+    const inputs = {
+      scriptTopic,
+      showReference,
+      referenceVideo: showReference ? referenceVideo : '',
+      selectedTopics
+    };
+    localStorage.setItem('scriptInputs', JSON.stringify(inputs));
+  };
+
+  const handleShowMore = () => {
+    const increment = 8;
+    const selectedCount = selectedTopics.length;
+    setVisibleCount(prev => Math.min(prev + increment, getCurrentTotalCount() - selectedCount));
+  };
+
+  const getCurrentTotalCount = () => {
+    switch (trendingCategory) {
+      case 'hashtags': return trendingHashtags.length;
+      case 'creators': return trendingCreators.length;
+      default: return trendingSuggestions.length;
+    }
+  };
+
+  const getCurrentTrendingItems = () => {
+    const selectedCount = selectedTopics.length;
+    const adjustedVisibleCount = visibleCount + selectedCount;
+    
+    switch (trendingCategory) {
+      case 'hashtags':
+        return trendingHashtags.slice(0, adjustedVisibleCount);
+      case 'creators':
+        return trendingCreators.slice(0, adjustedVisibleCount).map(item => ({
+          ...item,
+          topic: `@${item.topic}`
+        }));
+      default:
+        return trendingSuggestions.slice(0, adjustedVisibleCount);
+    }
+  };
+
+  const handleTopicClick = (topic: string) => {
+    if (!selectedTopics.includes(topic)) {
+      const newSelectedTopics = [...selectedTopics, topic];
+      setSelectedTopics(newSelectedTopics);
+      setScriptTopic(newSelectedTopics.join('; '));
+    }
+  };
+
+  const handleRemoveTopic = (topicToRemove: string) => {
+    const newSelectedTopics = selectedTopics.filter(topic => topic !== topicToRemove);
+    setSelectedTopics(newSelectedTopics);
+    setScriptTopic(newSelectedTopics.join('; '));
+  };
+
+  const getScoreColor = (score: number, category: TrendingCategory) => {
+    if (category === 'creators') {
+      const maxRank = trendingCreators.length;
+      const normalizedScore = 1 - ((score - 1) / (maxRank - 1));
+      const red = Math.round(normalizedScore * 255);
+      const blue = Math.round((1 - normalizedScore) * 255);
+      return `rgb(${red}, 0, ${blue})`;
+    } else {
+      const normalizedScore = score / 100;
+      const red = Math.round(normalizedScore * 255);
+      const blue = Math.round((1 - normalizedScore) * 255);
+      return `rgb(${red}, 0, ${blue})`;
+    }
+  };
+
+  const filteredVisibleItems = getCurrentTrendingItems()
+    .filter(item => !selectedTopics.includes(item.topic))
+    .slice(0, visibleCount);
+
+  if (!isLoaded) {
+    return null;
+  }
+
+  if (userId) {
+    return (
+      <main>
+        <section className="py-20">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center">
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white tracking-tight sm:text-5xl md:text-6xl mb-4">
+                Welcome back!
+              </h1>
+              <p className="text-xl text-gray-500 mb-8">
+                Continue creating viral TikTok scripts
+              </p>
+              <Link href="/viralgo">
+                <Button 
+                  className="bg-orange-500 hover:bg-orange-600 text-white text-lg py-6 px-8"
+                >
+                  Go to Script Generator
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main>
       <section className="py-20">
-        <div className="max-w-[800px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="lg:grid lg:grid-cols-12 lg:gap-12">
-            <div className="sm:text-center md:max-w-2xl md:mx-auto lg:col-span-5 lg:text-left">
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white tracking-tight sm:text-5xl md:text-6xl">
-                Go Viral with
-                <span className="block text-orange-500">ViralGo</span>
-              </h1>
-              <p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-xl lg:text-lg xl:text-xl">
-                Take your social media presence to the next level with our powerful
-                viral content platform. Create, schedule, and analyze content that
-                resonates with your audience.
-              </p>
-              <div className="mt-8 sm:max-w-lg sm:mx-auto sm:text-center lg:text-left lg:mx-0">
-                <Link href="/sign-up">
-                  <Button className="bg-white hover:bg-gray-100 text-black border border-gray-200 rounded-full text-lg px-8 py-4 inline-flex items-center justify-center">
-                    Start Growing Today
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-            <div className="mt-12 relative h-[450px] sm:mx-auto lg:mt-0 lg:mx-0 lg:col-span-7 lg:flex lg:items-center">
-              <Terminal />
-            </div>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white tracking-tight sm:text-5xl md:text-6xl mb-4">
+              Go Viral with
+              <span className="text-orange-500"> ViralGo</span>
+            </h1>
+            <p className="text-xl text-gray-500">
+              Generate viral TikTok scripts powered by AI
+            </p>
           </div>
-        </div>
-      </section>
+          
+          {/* Preview Script Generator */}
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="space-y-6 max-w-2xl mx-auto">
+              <div className="space-y-4">
+                <Label htmlFor="scriptTopic" className="text-lg font-medium">What's your video about?</Label>
+                <Textarea
+                  id="scriptTopic"
+                  placeholder="Enter your script topic or idea..."
+                  className="min-h-[100px] text-lg resize-none"
+                  value={scriptTopic}
+                  onChange={(e) => setScriptTopic(e.target.value)}
+                />
 
-      <section className="py-16 bg-white w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-            <div>
-              <div className="flex items-center justify-center h-12 w-12 rounded-md bg-orange-500 text-white">
-                <svg viewBox="0 0 24 24" className="h-6 w-6">
-                  <path
-                    fill="currentColor"
-                    d="M14.23 12.004a2.236 2.236 0 0 1-2.235 2.236 2.236 2.236 0 0 1-2.236-2.236 2.236 2.236 0 0 1 2.235-2.236 2.236 2.236 0 0 1 2.236 2.236zm2.648-10.69c-1.346 0-3.107.96-4.888 2.622-1.78-1.653-3.542-2.602-4.887-2.602-.41 0-.783.093-1.106.278-1.375.793-1.683 3.264-.973 6.365C1.98 8.917 0 10.42 0 12.004c0 1.59 1.99 3.097 5.043 4.03-.704 3.113-.39 5.588.988 6.38.32.187.69.275 1.102.275 1.345 0 3.107-.96 4.888-2.624 1.78 1.654 3.542 2.603 4.887 2.603.41 0 .783-.09 1.106-.275 1.374-.792 1.683-3.263.973-6.365C22.02 15.096 24 13.59 24 12.004c0-1.59-1.99-3.097-5.043-4.032.704-3.11.39-5.587-.988-6.38-.318-.184-.688-.277-1.092-.278zm-.005 1.09v.006c.225 0 .406.044.558.127.666.382.955 1.835.73 3.704-.054.46-.142.945-.25 1.44-.96-.236-2.006-.417-3.107-.534-.66-.905-1.345-1.727-2.035-2.447 1.592-1.48 3.087-2.292 4.105-2.295zm-9.77.02c1.012 0 2.514.808 4.11 2.28-.686.72-1.37 1.537-2.02 2.442-1.107.117-2.154.298-3.113.538-.112-.49-.195-.964-.254-1.42-.23-1.868.054-3.32.714-3.707.19-.09.4-.127.563-.132zm4.882 3.05c.455.468.91.992 1.36 1.564-.44-.02-.89-.034-1.345-.034-.46 0-.915.01-1.36.034.44-.572.895-1.096 1.345-1.565zM12 8.1c.74 0 1.477.034 2.202.093.406.582.802 1.203 1.183 1.86.372.64.71 1.29 1.018 1.946-.308.655-.646 1.31-1.013 1.95-.38.66-.773 1.288-1.18 1.87-.728.063-1.466.098-2.21.098-.74 0-1.477-.035-2.202-.093-.406-.582-.802-1.204-1.183-1.86-.372-.64-.71-1.29-1.018-1.946.303-.657.646-1.313 1.013-1.954.38-.66.773-1.286 1.18-1.868.728-.064 1.466-.098 2.21-.098zm-3.635.254c-.24.377-.48.763-.704 1.16-.225.39-.435.782-.635 1.174-.265-.656-.49-1.31-.676-1.947.64-.15 1.315-.283 2.015-.386zm7.26 0c.695.103 1.365.23 2.006.387-.18.632-.405 1.282-.66 1.933-.2-.39-.41-.783-.64-1.174-.225-.392-.465-.774-.705-1.146zm3.063.675c.484.15.944.317 1.375.498 1.732.74 2.852 1.708 2.852 2.476-.005.768-1.125 1.74-2.857 2.475-.42.18-.88.342-1.355.493-.28-.958-.646-1.956-1.1-2.98.45-1.017.81-2.01 1.085-2.964zm-13.395.004c.278.96.645 1.957 1.1 2.98-.45 1.017-.812 2.01-1.086 2.964-.484-.15-.944-.318-1.37-.5-1.732-.737-2.852-1.706-2.852-2.474 0-.768 1.12-1.742 2.852-2.476.42-.18.88-.342 1.356-.494zm11.678 4.28c.265.657.49 1.312.676 1.948-.64.157-1.316.29-2.016.39.24-.375.48-.762.705-1.158.225-.39.435-.788.636-1.18zm-9.945.02c.2.392.41.783.64 1.175.23.39.465.772.705 1.143-.695-.102-1.365-.23-2.006-.386.18-.63.406-1.282.66-1.933zM17.92 16.32c.112.493.2.968.254 1.423.23 1.868-.054 3.32-.714 3.708-.147.09-.338.128-.563.128-1.012 0-2.514-.807-4.11-2.28.686-.72 1.37-1.536 2.02-2.44 1.107-.118 2.154-.3 3.113-.54zm-11.83.01c.96.234 2.006.415 3.107.532.66.905 1.345 1.727 2.035 2.446-1.595 1.483-3.092 2.295-4.11 2.295-.22-.005-.406-.05-.553-.132-.666-.38-.955-1.834-.73-3.703.054-.46.142-.944.25-1.438zm4.56.64c.44.02.89.034 1.345.034.46 0 .915-.01 1.36-.034-.44.572-.895 1.095-1.345 1.565-.455-.47-.91-.993-1.36-1.565z"
+                {/* Selected Topics */}
+                <div className={`${selectedTopics.length > 0 ? 'block' : 'hidden'}`}>
+                  <div className="text-sm text-muted-foreground mb-2">Selected Topics:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedTopics.map((topic) => {
+                      let originalSuggestion: TrendingTopic | undefined;
+                      let category: TrendingCategory = 'topics';
+
+                      if (topic.startsWith('@')) {
+                        originalSuggestion = trendingCreators.find(s => `@${s.topic}` === topic);
+                        category = 'creators';
+                      } else if (topic.startsWith('#')) {
+                        originalSuggestion = trendingHashtags.find(s => `#${s.topic}` === topic);
+                        category = 'hashtags';
+                      } else {
+                        originalSuggestion = trendingSuggestions.find(s => s.topic === topic);
+                      }
+
+                      const backgroundColor = originalSuggestion 
+                        ? getScoreColor(originalSuggestion.score, category)
+                        : 'hsl(var(--primary))';
+                      
+                      return (
+                        <TooltipProvider key={topic}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div 
+                                className="flex items-center rounded-full text-xs"
+                                style={{
+                                  backgroundColor,
+                                  borderColor: backgroundColor,
+                                }}
+                              >
+                                <span className="px-3 py-1 text-white">{topic}</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveTopic(topic);
+                                  }}
+                                  className="pr-2 pl-0 text-white/80 hover:text-white"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{category === 'creators' ? `Rank #${originalSuggestion?.score}` : `${originalSuggestion?.score}%`}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Trending Section */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between gap-2 mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">Add Trending</span>
+                      <select
+                        value={trendingCategory}
+                        onChange={(e) => {
+                          setTrendingCategory(e.target.value as TrendingCategory);
+                          setVisibleCount(3);
+                        }}
+                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      >
+                        <option value="topics">Topics</option>
+                        <option value="hashtags">Hashtags</option>
+                        <option value="creators">Creators</option>
+                      </select>
+                      <span className="text-sm">on</span>
+                      <span className="font-bold flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="inline-block">
+                          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                        </svg>
+                        TikTok
+                      </span>
+                      <span className="text-sm">in</span>
+                      <span className="font-bold flex items-center gap-1">
+                        USA 🇺🇸
+                      </span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <InfoIcon className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>Support for more countries and platforms coming soon.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    {loadingSuggestions ? (
+                      <div className="text-sm text-muted-foreground">Loading trending items...</div>
+                    ) : (
+                      filteredVisibleItems.map((item, index) => (
+                        <div
+                          key={item.topic}
+                          className="suggestion-button opacity-0 translate-y-4 scale-95"
+                          style={{
+                            animation: `fadeInUp 0.3s ease-out forwards ${index * 0.1}s`
+                          }}
+                        >
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleTopicClick(item.topic)}
+                                  className="text-xs text-white transition-all"
+                                  style={{
+                                    backgroundColor: getScoreColor(item.score, trendingCategory),
+                                    borderColor: getScoreColor(item.score, trendingCategory),
+                                  }}
+                                >
+                                  {item.topic}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{trendingCategory === 'creators' ? `Rank #${item.score}` : `${item.score}%`}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {visibleCount < getCurrentTotalCount() && (
+                    <div 
+                      className="show-more-button opacity-0"
+                      style={{
+                        animation: 'fadeIn 0.3s ease-out 0.5s forwards'
+                      }}
+                    >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleShowMore}
+                        className="mt-2"
+                      >
+                        Show More
+                      </Button>
+                    </div>
+                  )}
+
+                  <style jsx>{`
+                    @keyframes fadeInUp {
+                      from {
+                        opacity: 0;
+                        transform: translateY(1rem) scale(0.95);
+                      }
+                      to {
+                        opacity: 1;
+                        transform: translateY(0) scale(1);
+                      }
+                    }
+                    @keyframes fadeIn {
+                      from {
+                        opacity: 0;
+                      }
+                      to {
+                        opacity: 1;
+                      }
+                    }
+                  `}</style>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3 py-2">
+                <Switch 
+                  id="reference-mode" 
+                  checked={showReference}
+                  onCheckedChange={setShowReference}
+                />
+                <Label htmlFor="reference-mode" className="text-base text-gray-600 dark:text-gray-400">Base this script off a reference video</Label>
+              </div>
+
+              {showReference && (
+                <div className="space-y-2">
+                  <Label htmlFor="referenceVideo" className="text-lg font-medium">TikTok Video URL</Label>
+                  <Input
+                    id="referenceVideo"
+                    placeholder="Paste TikTok video URL"
+                    type="url"
+                    value={referenceVideo}
+                    onChange={(e) => setReferenceVideo(e.target.value)}
+                    className="text-lg"
                   />
-                </svg>
-              </div>
-              <div className="mt-5">
-                <h2 className="text-lg font-medium text-gray-900">
-                  AI-Powered Content
-                </h2>
-                <p className="mt-2 text-base text-gray-500">
-                  Generate viral-worthy content ideas and optimize your posts with
-                  our advanced AI algorithms.
-                </p>
-              </div>
-            </div>
+                </div>
+              )}
 
-            <div className="mt-10 lg:mt-0">
-              <div className="flex items-center justify-center h-12 w-12 rounded-md bg-orange-500 text-white">
-                <Database className="h-6 w-6" />
-              </div>
-              <div className="mt-5">
-                <h2 className="text-lg font-medium text-gray-900">
-                  Smart Analytics
-                </h2>
-                <p className="mt-2 text-base text-gray-500">
-                  Track your content performance with detailed analytics and
-                  insights to optimize your social media strategy.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-10 lg:mt-0">
-              <div className="flex items-center justify-center h-12 w-12 rounded-md bg-orange-500 text-white">
-                <CreditCard className="h-6 w-6" />
-              </div>
-              <div className="mt-5">
-                <h2 className="text-lg font-medium text-gray-900">
-                  Multi-Platform Support
-                </h2>
-                <p className="mt-2 text-base text-gray-500">
-                  Manage all your social media accounts in one place with seamless
-                  integration across major platforms.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="lg:grid lg:grid-cols-2 lg:gap-8 lg:items-center">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-                Ready to go viral?
-              </h2>
-              <p className="mt-3 max-w-3xl text-lg text-gray-500">
-                Join thousands of content creators who are already using ViralGo
-                to grow their social media presence and engage with their audience
-                like never before.
-              </p>
-            </div>
-            <div className="mt-8 lg:mt-0 flex justify-center lg:justify-end">
-              <Link href="/sign-up">
-                <Button className="bg-white hover:bg-gray-100 text-black border border-gray-200 rounded-full text-xl px-12 py-6 inline-flex items-center justify-center">
-                  Get Started Free
-                  <ArrowRight className="ml-3 h-6 w-6" />
+              <SignInButton mode="modal">
+                <Button 
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white text-lg py-6"
+                  disabled={!scriptTopic.trim() || (showReference && !referenceVideo.trim())}
+                  onClick={() => {
+                    handleGenerateClick();
+                    router.push('/viralgo');
+                  }}
+                >
+                  Generate Script
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-              </Link>
+              </SignInButton>
             </div>
           </div>
         </div>
