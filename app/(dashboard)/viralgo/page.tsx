@@ -1,33 +1,20 @@
 import { redirect } from 'next/navigation';
-import { getTeamForUser, getUser } from '@/lib/db/queries';
-import { Login } from 'app/(login)/login';
+import { getTeamForUser } from '@/lib/db/queries';
 import React from 'react';
-import { ChatBot } from '@/components/chatbot';
-import { ChatLayout } from '@/components/chatlayout';
 import BaseDashboard from '@/components/BaseDashboard';
+import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/nextjs';
 
 export default async function ViralGoPage() {
-  const user = await getUser();
-
-  if (!user) {
-    return <Login mode="signin" />;
-  }
-
-  const team = await getTeamForUser(user.id);
-
-  if (!team) {
-    throw new Error('Team not found');
-  }
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <BaseDashboard />
-
-      {!["Base", "Plus"].includes(team.planName || '') && (
-        <>
-         
-        </>
-      )}
-    </div>
+    <ClerkProvider>
+      <SignedIn>
+        <div className="container mx-auto px-4 py-8">
+          <BaseDashboard />
+        </div>
+      </SignedIn>
+      <SignedOut>
+        <RedirectToSignIn />
+      </SignedOut>
+    </ClerkProvider>
   );
 }
