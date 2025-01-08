@@ -6,22 +6,25 @@ import { getUser } from '@/lib/db/queries';
 import { Analytics } from "@vercel/analytics/react"
 import { ThemeProvider } from 'next-themes';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { ClerkProvider } from '@clerk/nextjs';
 
 const manrope = Manrope({ subsets: ['latin'] });
 
 function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-      storageKey="viralgo-theme"
-    >
-      <TooltipProvider>
-        {children}
-      </TooltipProvider>
-    </ThemeProvider>
+    <ClerkProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+        storageKey="viralgo-theme"
+      >
+        <TooltipProvider>
+          {children}
+        </TooltipProvider>
+      </ThemeProvider>
+    </ClerkProvider>
   );
 }
 

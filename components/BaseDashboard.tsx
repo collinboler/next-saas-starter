@@ -8,6 +8,12 @@ import { ContentCoach } from './ContentCoach';
 import { Script } from './Script';
 import { Analysis } from './Analysis';
 import { PenSquare, BarChart2, Brain } from 'lucide-react';
+import {
+  TooltipProvider,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { useSearchParams } from 'next/navigation';
 
@@ -42,12 +48,26 @@ export default function BaseDashboard() {
           Content Coach
         </Button>
       </Link>
-      <Link href="/viralgo?view=account-analysis">
-        <Button variant="outline" className="w-80 h-16 flex items-center gap-3 text-lg">
-          <BarChart2 className="w-7 h-7" />
-          Account Analysis
-        </Button>
-      </Link>
+      <TooltipProvider>
+        <Tooltip delayDuration={50} defaultOpen={false}>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="w-80 h-16 flex items-center gap-3 text-lg opacity-50 hover:opacity-50"
+              onClick={(e) => {
+                e.currentTarget.focus();
+              }}
+            >
+              <BarChart2 className="w-7 h-7" />
+              Account Analysis
+              <span className="ml-2 text-xs text-muted-foreground">(Coming Soon)</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top" sideOffset={5} className="bg-black text-white px-3 py-2">
+            <p className="text-sm font-medium">Coming Soon!</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
   );
 }
