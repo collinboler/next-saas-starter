@@ -23,6 +23,7 @@ import { signOut } from '@/app/(login)/actions';
 import { useRouter } from 'next/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
 
+
 export default function RootLayout({
   children,
 }: {
@@ -81,7 +82,7 @@ function Header() {
           </Link>
           <ThemeToggle />
           <SignedIn>
-            <UserButton afterSignOutUrl="/" />
+            <UserButton />
           </SignedIn>
           <SignedOut>
             <Button
@@ -108,7 +109,6 @@ function Footer() {
     </footer>
   );
 }
-
 // export default function Layout({ children }: { children: React.ReactNode }) {
 //   return (
 //     <section className="flex flex-col min-h-screen">
@@ -118,3 +118,4 @@ function Footer() {
 //     </section>
 //   );
 // }
+
