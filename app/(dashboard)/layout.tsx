@@ -10,18 +10,11 @@ import {
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { CircleIcon, Home, LogOut } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useUser } from '@/lib/auth';
-import { signOut } from '@/app/(login)/actions';
-import { useRouter } from 'next/navigation';
+import { CircleIcon } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { Zap } from 'lucide-react';
+import { CreditDisplay } from '@/components/CreditDisplay';
+import { useUser } from '@clerk/nextjs';
 
 
 export default function RootLayout({
@@ -51,6 +44,7 @@ export default function RootLayout({
 
 function Header() {
   const [mounted, setMounted] = useState(false);
+  const { user } = useUser();
 
   useEffect(() => {
     setMounted(true);
@@ -82,7 +76,16 @@ function Header() {
           </Link> */}
           <ThemeToggle />
           <SignedIn>
-            <UserButton />
+            <div className="flex items-center gap-3">
+              <CreditDisplay showAsDialog />
+              <UserButton>
+                <UserButton.UserProfilePage label="Credits" url="credits" labelIcon={<Zap className="h-4 w-4 text-yellow-500" />}>
+                  <div className="p-4">
+                    <CreditDisplay />
+                  </div>
+                </UserButton.UserProfilePage>
+              </UserButton>
+            </div>
           </SignedIn>
           <SignedOut>
             <Button
