@@ -61,7 +61,7 @@ function Header() {
   }
 
   return (
-    <header className="border-b border-border bg-background">
+    <header className="sticky top-0 backdrop-blur-sm bg-gray-100/95 dark:bg-gray-800/95 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.5)] z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
         <Link href="/" className="flex items-center">
           <CircleIcon className="h-6 w-6 text-orange-500" />
