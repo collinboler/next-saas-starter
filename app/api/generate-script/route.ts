@@ -33,13 +33,12 @@ export async function POST(req: NextRequest) {
 
 And return links to relevant videos and images (media) based on ${topic} that the user can use in their video, and return links to the sources you used to derive information about the topic.
 
-Return your final answer like as a string that resembles JSON, but not exactly JSON. Don't include things like backticks, or say the word json, or have newlines out side of the ""
-Example response template:
+Return your final answer like as a string that resembles JSON, but not exactly JSON. Don't include things like backticks, or say the word json, or have newlines out side of the "". Example response template:
 {
  "script": "generated script",
  "caption": "generated caption",
- "media": "found media links",
- "sources": "source links used"
+ "media": ["media link 1", "media link 2"],
+ "sources": ["source link 1", "source link 2"]
 }`
           }
         ]
