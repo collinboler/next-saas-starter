@@ -4,14 +4,14 @@ export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   try {
-    const { topic, reference, style } = await req.json();
+    const { topic, reference } = await req.json();
     
     if (!process.env.PERPLEXITY_API_KEY) {
       throw new Error('PERPLEXITY_API_KEY is not set');
     }
 
-    // First call: Topic Analysis
-    const topicAnalysisResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+    // Single call to Perplexity for script generation
+    const scriptResponse = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -23,115 +23,49 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: "system",
-            content: "You are a TikTok trend analyst. You must provide real-time trending information about the user's input. Format your response with ### for headings and ** ** for important terms."
+            content: "You are a TikTok script generator. Generate a script that matches the style of the reference video if provided. Return your response in JSON format with the following fields: script (the generated script), caption (a catchy caption), media (relevant video/image links), and sources (reference links used)."
           },
           {
             role: "user",
-            content: `Provide real-time (right now, not two days ago) trending information as if you are providing everything a video script writer (who doesn't have access to internet) needs to know before making a TikTok script. You aren't making the script yourself, but you're explaining the following input:\n${topic}`
-          }
-        ]
-      })
-    });
-
-    if (!topicAnalysisResponse.ok) {
-      throw new Error(`Perplexity Topic Analysis error: ${topicAnalysisResponse.status}`);
-    }
-
-    const perplexityData = await topicAnalysisResponse.json();
-    const topicAnalysis = perplexityData.choices[0].message.content;
-
-    // Second call: Reference Video Analysis (if provided)
-    let referenceAnalysis = '';
-    if (reference) {
-      // Structure the reference data
-      const referenceData = {
-        url: reference,
-        caption: '',
-        username: '',
-        soundTitle: '',
-        transcription: '',
-        ...reference // This will override the defaults with any provided data
-      };
-
-      const referenceAnalysisResponse = await fetch('https://api.perplexity.ai/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: "llama-3.1-sonar-small-128k-online",
-          messages: [
-            {
-              role: "system",
-              content: "You are a TikTok video analyst. Analyze the style, format, and content of reference video. Format your response with ### for headings and ** ** for important terms."
-            },
-            {
-              role: "user",
-              content: `Analyze this TikTok video's content and structure:
-
-              Caption: ${referenceData.caption}
-              Creator: ${referenceData.username}
-              Sound: ${referenceData.soundTitle}
-              Transcription: ${referenceData.transcription}
-
-              Please analyze:
-              1. The hook and how it grabs attention
-              2. The overall structure and flow
-              3. The call to action and engagement strategy
-              4. The caption's effectiveness and hashtag usage
-              5. How the sound/music choice enhances the content
-              
-              Provide specific insights on how to replicate this style while maintaining originality.`
+            content: `Create a TikTok video script on ${topic}.${
+              reference ? `\nHave the script be in exactly the transcript style as this:\n${reference.transcription}\nAlso, create a caption exactly the same style as this:\n${reference.caption}` : ''
             }
-          ]
-        })
-      });
 
-      if (!referenceAnalysisResponse.ok) {
-        throw new Error(`Perplexity Reference Analysis error: ${referenceAnalysisResponse.status}`);
-      }
+And return links to relevant videos and images (media) based on ${topic} that the user can use in their video, and return links to the sources you used to derive information about the topic.
 
-      const referenceAnalysisData = await referenceAnalysisResponse.json();
-      referenceAnalysis = referenceAnalysisData.choices[0].message.content;
-    }
-
-    // Generate script with OpenAI using both analyses
-    const assistantResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "gpt-4-turbo-preview",
-        messages: [
-          {
-            role: "system",
-            content: "You are a TikTok script enhancement expert. Your job is to create a script that is engaging, viral-worthy, and captures attention in the first 3 seconds."
-          },
-          {
-            role: "user",
-            content: `Create a s:\n\nTopic Analysis:\n${topicAnalysis}\n\nReference Analysis:\n${referenceAnalysis}\n\nCreate a TikTok script about: ${topic}${style ? `\nStyle preferences: ${style}` : ''}`
+Return your final answer like as a string that resembles JSON, but not exactly JSON. Don't include things like backticks, or say the word json, or have newlines out side of the ""
+Example response template:
+{
+ "script": "generated script",
+ "caption": "generated caption",
+ "media": "found media links",
+ "sources": "source links used"
+}`
           }
         ]
       })
     });
 
-    if (!assistantResponse.ok) {
-      throw new Error(`OpenAI API error: ${assistantResponse.status}`);
+    if (!scriptResponse.ok) {
+      throw new Error(`Perplexity API error: ${scriptResponse.status}`);
     }
 
-    const assistantData = await assistantResponse.json();
-    const script = assistantData.choices[0].message.content;
+    const perplexityData = await scriptResponse.json();
+    console.log('Full Perplexity Response:', perplexityData);
+    
+    const result = perplexityData.choices[0].message.content;
 
-    // Return separate analyses
-    return Response.json({ 
-      script, 
-      topicAnalysis,
-      referenceAnalysis 
-    });
+    // Parse the JSON response
+    let parsedResult;
+    try {
+      parsedResult = JSON.parse(result);
+    } catch (e) {
+      console.error('Failed to parse Perplexity response as JSON:', e);
+      throw new Error('Invalid response format from Perplexity');
+    }
+
+    // Return the parsed JSON response
+    return Response.json(parsedResult);
   } catch (error) {
     console.error('Error in /api/generate-script:', error);
     return new Response(

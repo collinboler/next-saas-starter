@@ -99,6 +99,9 @@ export function Script() {
     const [additionalStyle, setAdditionalStyle] = useState("");
     const [loading, setLoading] = useState(false);
     const [generatedScript, setGeneratedScript] = useState("");
+    const [generatedCaption, setGeneratedCaption] = useState("");
+    const [generatedMedia, setGeneratedMedia] = useState<string[]>([]);
+    const [generatedSources, setGeneratedSources] = useState<string[]>([]);
     const [topicAnalysis, setTopicAnalysis] = useState("");
     const [referenceAnalysis, setReferenceAnalysis] = useState("");
     const [visibleCount, setVisibleCount] = useState(3);
@@ -113,7 +116,7 @@ export function Script() {
     const [trendingCategory, setTrendingCategory] = useState<TrendingCategory>('topics');
     const [trendingHashtags, setTrendingHashtags] = useState<TrendingTopic[]>([]);
     const [trendingCreators, setTrendingCreators] = useState<TrendingTopic[]>([]);
-    const [activeTab, setActiveTab] = useState<'script' | 'topic' | 'reference'>('script');
+    const [activeTab, setActiveTab] = useState<'script' | 'caption' | 'media' | 'sources'>('script');
     const [videoMetadata, setVideoMetadata] = useState<{ author: string; caption: string } | null>(null);
     const [shouldGenerateOnSignIn, setShouldGenerateOnSignIn] = useState(false);
 
@@ -214,7 +217,6 @@ export function Script() {
             // Create a URL with all the input parameters
             const params = new URLSearchParams({
                 topic: scriptTopic,
-                style: additionalStyle || '',
                 reference: referenceContent || '',
                 transcription: transcription || '',
                 embedHtml: embedHtml || '',
@@ -248,16 +250,15 @@ export function Script() {
                         url: referenceContent,
                         caption: videoMetadata?.caption || '',
                         username: videoMetadata?.author || '',
-                        soundTitle: '',  // We'll get this from the video processing
                         transcription: transcription || ''
-                    } : '',
-                    style: additionalStyle
+                    } : null
                 }),
             });
             const data = await response.json();
             setGeneratedScript(data.script);
-            setTopicAnalysis(data.topicAnalysis || '');
-            setReferenceAnalysis(data.referenceAnalysis || '');
+            setGeneratedCaption(data.caption);
+            setGeneratedMedia(data.media || []);
+            setGeneratedSources(data.sources || []);
         } catch (error) {
             console.error("Error generating script:", error);
         }
@@ -768,9 +769,6 @@ export function Script() {
                                         </a>
                                     </p>
                                 )}
-                                {additionalStyle && (
-                                    <p><span className="font-medium">Additional Notes:</span> {additionalStyle}</p>
-                                )}
                             </div>
                         </div>
 
@@ -782,26 +780,25 @@ export function Script() {
                                 Generated Script
                             </button>
                             <button
-                                className={`px-4 py-2 flex items-center gap-2 ${activeTab === 'topic' ? 'border-b-2 border-orange-500 text-orange-500' : 'text-gray-500'}`}
-                                onClick={() => setActiveTab('topic')}
+                                className={`px-4 py-2 ${activeTab === 'caption' ? 'border-b-2 border-orange-500 text-orange-500' : 'text-gray-500'}`}
+                                onClick={() => setActiveTab('caption')}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <line x1="2" y1="12" x2="22" y2="12"/>
-                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                                </svg>
-                                Topic Analysis
+                                Caption
                             </button>
-                            {referenceAnalysis && embedHtml && (
+                            {generatedMedia.length > 0 && (
                                 <button
-                                    className={`px-4 py-2 flex items-center gap-2 ${activeTab === 'reference' ? 'border-b-2 border-orange-500 text-orange-500' : 'text-gray-500'}`}
-                                    onClick={() => setActiveTab('reference')}
+                                    className={`px-4 py-2 ${activeTab === 'media' ? 'border-b-2 border-orange-500 text-orange-500' : 'text-gray-500'}`}
+                                    onClick={() => setActiveTab('media')}
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <polygon points="23 7 16 12 23 17 23 7"/>
-                                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-                                    </svg>
-                                    Reference Analysis
+                                    Media
+                                </button>
+                            )}
+                            {generatedSources.length > 0 && (
+                                <button
+                                    className={`px-4 py-2 ${activeTab === 'sources' ? 'border-b-2 border-orange-500 text-orange-500' : 'text-gray-500'}`}
+                                    onClick={() => setActiveTab('sources')}
+                                >
+                                    Sources
                                 </button>
                             )}
                         </div>
@@ -810,17 +807,50 @@ export function Script() {
                             <FormattedText text={generatedScript} />
                         )}
                         
-                        {activeTab === 'topic' && topicAnalysis && (
-                            <FormattedText text={topicAnalysis} />
+                        {activeTab === 'caption' && (
+                            <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">Generated caption for your TikTok video:</p>
+                                <FormattedText text={generatedCaption} />
+                            </div>
                         )}
-                        
-                        {activeTab === 'reference' && referenceAnalysis && embedHtml && (
-                            <div className="space-y-6">
-                                <div 
-                                    className="relative aspect-video w-full"
-                                    dangerouslySetInnerHTML={{ __html: embedHtml }}
-                                />
-                                <FormattedText text={referenceAnalysis} />
+
+                        {activeTab === 'media' && (
+                            <div className="space-y-4">
+                                <p className="text-sm text-muted-foreground">Suggested media for your video:</p>
+                                <ul className="list-disc pl-5 space-y-2">
+                                    {generatedMedia.map((media, index) => (
+                                        <li key={index}>
+                                            <a 
+                                                href={media}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-blue-500 hover:text-blue-600 hover:underline"
+                                            >
+                                                {media}
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {activeTab === 'sources' && (
+                            <div className="space-y-4">
+                                <p className="text-sm text-muted-foreground">Sources used:</p>
+                                <ul className="list-disc pl-5 space-y-2">
+                                    {generatedSources.map((source, index) => (
+                                        <li key={index}>
+                                            <a 
+                                                href={source}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-blue-500 hover:text-blue-600 hover:underline"
+                                            >
+                                                {source}
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
                         )}
                     </Card>
