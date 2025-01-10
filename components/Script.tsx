@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, Zap, Copy, Check } from "lucide-react";
 import {
     Tooltip,
     TooltipContent,
@@ -119,6 +119,7 @@ export function Script() {
     const [activeTab, setActiveTab] = useState<'script' | 'caption' | 'media' | 'sources'>('script');
     const [videoMetadata, setVideoMetadata] = useState<{ author: string; caption: string } | null>(null);
     const [shouldGenerateOnSignIn, setShouldGenerateOnSignIn] = useState(false);
+    const [hasCopied, setHasCopied] = useState(false);
 
     // Load saved inputs from cookies on mount
     useEffect(() => {
@@ -475,13 +476,23 @@ export function Script() {
         }
     }, [isSignedIn]);
 
+    const copyToClipboard = async (text: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setHasCopied(true);
+            setTimeout(() => setHasCopied(false), 1000); // Switch back after 1 second
+        } catch (err) {
+            console.error('Failed to copy text:', err);
+        }
+    };
+
     return (
         <div className="container mx-auto p-4 max-w-2xl">
             <h1 className="text-2xl font-bold mb-6">Script Generator</h1>
             <form onSubmit={handleSubmit} className="space-y-6">
                 {currentStep === 1 && (
                     <div className="space-y-4">
-                        <Label htmlFor="scriptTopic"><b>[1/3]</b> What's your video about?</Label>
+                        <Label htmlFor="scriptTopic"><b>[1/2]</b> What's your video about?</Label>
 
                         <Textarea
                             id="scriptTopic"
@@ -690,10 +701,10 @@ export function Script() {
                     </div>
                 )}
 
-                {currentStep === 2 && (
+                {currentStep === 2 && !generatedScript && (
                     <div className="space-y-4">
                         <Label htmlFor="referenceContent">
-                            <b>[2/3]</b> Input TikTok Video URL for style reference <i>(Optional)</i>
+                            <b>[2/2]</b> Input TikTok Video URL for style reference <i>(Optional)</i>
                         </Label>
                         <div className="space-y-2">
                             <Input
@@ -751,22 +762,32 @@ export function Script() {
                     </div>
                 )}
 
-                {currentStep === 3 && !generatedScript && (
-                    <div className="space-y-2">
-                        <Label htmlFor="additionalStyle">
-                            <b>[3/3]</b> Additional notes? (Optional)
-                        </Label>
-                        <Textarea
-                            id="additionalStyle"
-                            placeholder="E.g., Funny and energetic, Educational and calm, Storytelling format..."
-                            value={additionalStyle}
-                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAdditionalStyle(e.target.value)}
-                        />
+                {currentStep > 2 && !generatedScript && (
+                    <div className="space-y-4">
+                        <div className="text-sm text-muted-foreground space-y-1">
+                            <p><span className="font-medium">Topic:</span> {scriptTopic}</p>
+                            {referenceContent && videoMetadata && (
+                                <p>
+                                    <span className="font-medium">Reference:</span>{' '}
+                                    <a 
+                                        href={referenceContent}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-500 hover:text-blue-600 hover:underline"
+                                    >
+                                        {`@${videoMetadata.author}: ${videoMetadata.caption}`}
+                                    </a>
+                                </p>
+                            )}
+                        </div>
+
                         {!isSignedIn ? (
                             <div className="space-y-4">
                                 <SignInButton mode="modal">
                                     <Button className="w-full">
-                                        Generate Script {scriptTopic ? `about "${scriptTopic}"` : ''}
+                                        Generate Script{' '}
+                                        <Zap className="h-4 w-4 ml-2 text-yellow-500" />
+                                        <span className="text-sm ml-1">2</span>
                                     </Button>
                                 </SignInButton>
                                 <p className="text-sm text-muted-foreground text-center">
@@ -774,8 +795,18 @@ export function Script() {
                                 </p>
                             </div>
                         ) : (
-                            <Button type="submit" className="w-full mt-4" disabled={loading}>
-                                {loading ? "Generating..." : "Generate Script"}
+                            <Button 
+                                type="submit" 
+                                className="w-full"
+                                disabled={loading}
+                            >
+                                {loading ? "Generating..." : (
+                                    <>
+                                        Generate Script{' '}
+                                        <Zap className="h-4 w-4 ml-2 text-yellow-500" />
+                                        <span className="text-sm ml-1">2</span>
+                                    </>
+                                )}
                             </Button>
                         )}
                     </div>
@@ -837,13 +868,41 @@ export function Script() {
                         </div>
                         
                         {activeTab === 'script' && (
-                            <FormattedText text={generatedScript} />
+                            <div className="relative">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute right-0 top-0 text-muted-foreground hover:text-foreground"
+                                    onClick={() => copyToClipboard(generatedScript)}
+                                >
+                                    {hasCopied ? (
+                                        <Check className="h-4 w-4 text-green-500" />
+                                    ) : (
+                                        <Copy className="h-4 w-4" />
+                                    )}
+                                </Button>
+                                <FormattedText text={generatedScript} />
+                            </div>
                         )}
                         
                         {activeTab === 'caption' && (
-                            <div className="space-y-2">
+                            <div className="relative space-y-2">
                                 <p className="text-sm text-muted-foreground">Generated caption for your TikTok video:</p>
-                                <FormattedText text={generatedCaption} />
+                                <div className="relative">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute right-0 top-0 text-muted-foreground hover:text-foreground"
+                                        onClick={() => copyToClipboard(generatedCaption)}
+                                    >
+                                        {hasCopied ? (
+                                            <Check className="h-4 w-4 text-green-500" />
+                                        ) : (
+                                            <Copy className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                    <FormattedText text={generatedCaption} />
+                                </div>
                             </div>
                         )}
 
@@ -898,8 +957,15 @@ export function Script() {
                         <Button 
                             onClick={handleRemix}
                             disabled={loading || !remixInput.trim()}
+                            className="flex items-center"
                         >
-                            {loading ? "Remixing..." : "Remix"}
+                            {loading ? "Remixing..." : (
+                                <>
+                                    Remix{' '}
+                                    <Zap className="h-4 w-4 ml-2 text-yellow-500" />
+                                    <span className="text-sm ml-1">1</span>
+                                </>
+                            )}
                         </Button>
                     </div>
                 </div>
