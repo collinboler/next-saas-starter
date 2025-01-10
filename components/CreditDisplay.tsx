@@ -128,7 +128,7 @@ export function CreditDisplay({ showAsDialog = false, trigger }: CreditDisplayPr
             )}
           </p>
         </div>
-        
+{/*         
         <Button 
           onClick={addTestCredits} 
           variant="outline" 
@@ -137,7 +137,7 @@ export function CreditDisplay({ showAsDialog = false, trigger }: CreditDisplayPr
           disabled={isAddingCredits}
         >
           {isAddingCredits ? 'Adding Credits...' : 'Add 10 Test Credits'}
-        </Button>
+        </Button> */}
       </CardContent>
     </Card>
   );
