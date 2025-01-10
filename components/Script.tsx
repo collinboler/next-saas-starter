@@ -120,6 +120,7 @@ export function Script() {
     const [videoMetadata, setVideoMetadata] = useState<{ author: string; caption: string } | null>(null);
     const [shouldGenerateOnSignIn, setShouldGenerateOnSignIn] = useState(false);
     const [hasCopied, setHasCopied] = useState(false);
+    const [generatingTTS, setGeneratingTTS] = useState(false);
 
     // Load saved inputs from cookies on mount
     useEffect(() => {
@@ -483,6 +484,51 @@ export function Script() {
             setTimeout(() => setHasCopied(false), 1000); // Switch back after 1 second
         } catch (err) {
             console.error('Failed to copy text:', err);
+        }
+    };
+
+    const handleGenerateTTS = async () => {
+        if (!isSignedIn) return;
+        setGeneratingTTS(true);
+        
+        try {
+            // First check if we have enough credits
+            const creditResponse = await fetch('/api/credits', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'tts' })
+            });
+            
+            if (!creditResponse.ok) {
+                const error = await creditResponse.json();
+                alert(error.error || 'Not enough credits to generate audio');
+                return;
+            }
+
+            const response = await fetch('/api/generate-tts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: generatedScript })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to generate audio');
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'tiktok-script.mp3';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Error generating TTS:', error);
+            alert('Failed to generate audio. Please try again.');
+        } finally {
+            setGeneratingTTS(false);
         }
     };
 
@@ -946,6 +992,20 @@ export function Script() {
                             </div>
                         )}
                     </Card>
+                    
+                    <Button 
+                        onClick={handleGenerateTTS}
+                        disabled={generatingTTS}
+                        className="w-full flex items-center justify-center gap-2"
+                    >
+                        {generatingTTS ? "Generating Audio..." : (
+                            <>
+                                Generate Audio{' '}
+                                <Zap className="h-4 w-4 text-yellow-500" />
+                                <span className="text-sm">1</span>
+                            </>
+                        )}
+                    </Button>
                     
                     <div className="flex gap-2">
                         <Input
