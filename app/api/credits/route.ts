@@ -120,36 +120,44 @@ export async function PATCH(request: NextRequest) {
 
 // Use credits
 export async function PUT(request: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const { action } = await request.json();
-  const creditCost = action === 'create' ? 2 : action === 'remix' ? 1 : 1;
-
-  const user = await clerk.users.getUser(userId);
-  const currentCredits = (user.publicMetadata.credits as number) || 0;
-
-  if (currentCredits < creditCost) {
-    return NextResponse.json({
-      success: false,
-      error: `Insufficient credits. Need ${creditCost} credits for this action.`,
-      credits: currentCredits
-    }, { status: 400 });
-  }
-
-  await clerk.users.updateUser(userId, {
-    publicMetadata: {
-      ...user.publicMetadata,
-      credits: currentCredits - creditCost
+  try {
+    const { userId } = await getAuth(request);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-  });
 
-  return NextResponse.json({
-    success: true,
-    credits: currentCredits - creditCost,
-    action,
-    creditCost
-  });
+    const { action } = await request.json();
+    const creditCost = action === 'create' ? 2 : action === 'remix' ? 1 : 1;
+
+    const user = await clerk.users.getUser(userId);
+    const currentCredits = (user.publicMetadata.credits as number) || 0;
+
+    if (currentCredits < creditCost) {
+      return NextResponse.json({
+        success: false,
+        error: `Insufficient credits. Need ${creditCost} credits for this action.`,
+        credits: currentCredits
+      }, { status: 400 });
+    }
+
+    await clerk.users.updateUser(userId, {
+      publicMetadata: {
+        ...user.publicMetadata,
+        credits: currentCredits - creditCost
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      credits: currentCredits - creditCost,
+      action,
+      creditCost
+    });
+  } catch (error) {
+    console.error('PUT - Error:', error);
+    return NextResponse.json({ 
+      error: 'Failed to use credits',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
+  }
 } 

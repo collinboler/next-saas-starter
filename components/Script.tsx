@@ -239,6 +239,21 @@ export function Script() {
         setLoading(true);
 
         try {
+            // First check if we have enough credits
+            const creditResponse = await fetch('/api/credits', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'create' })
+            });
+            
+            if (!creditResponse.ok) {
+                const error = await creditResponse.json();
+                alert(error.error || 'Not enough credits to generate script');
+                setLoading(false);
+                return;
+            }
+
+            // If we have credits, generate the script
             const response = await fetch("/api/generate-script", {
                 method: "POST",
                 headers: {
@@ -261,6 +276,7 @@ export function Script() {
             setGeneratedSources(data.sources || []);
         } catch (error) {
             console.error("Error generating script:", error);
+            alert('Failed to generate script. Please try again.');
         }
         setLoading(false);
     };
@@ -271,7 +287,23 @@ export function Script() {
         }
         if (!remixInput.trim()) return;
         setLoading(true);
+        
         try {
+            // First check if we have enough credits
+            const creditResponse = await fetch('/api/credits', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'remix' })
+            });
+            
+            if (!creditResponse.ok) {
+                const error = await creditResponse.json();
+                alert(error.error || 'Not enough credits to remix script');
+                setLoading(false);
+                return;
+            }
+
+            // If we have credits, remix the script
             const response = await fetch("/api/generate-script", {
                 method: "POST",
                 headers: {
@@ -288,6 +320,7 @@ export function Script() {
             setRemixInput("");
         } catch (error) {
             console.error("Error remixing script:", error);
+            alert('Failed to remix script. Please try again.');
         }
         setLoading(false);
     };
