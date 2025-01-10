@@ -510,6 +510,11 @@ export function Script() {
                 return;
             }
 
+            console.log('Attempting TTS generation with:', {
+                textLength: generatedScript.length,
+                voice: selectedVoice
+            });
+
             const response = await fetch('/api/generate-tts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -520,16 +525,30 @@ export function Script() {
             });
 
             if (!response.ok) {
+                console.error('TTS API Error:', {
+                    status: response.status,
+                    statusText: response.statusText
+                });
                 throw new Error('Failed to generate audio');
             }
 
             const blob = await response.blob();
+            if (blob.size === 0) {
+                console.error('Received empty audio blob');
+                throw new Error('Generated audio file is empty');
+            }
+
+            console.log('TTS generation successful:', {
+                blobSize: blob.size,
+                type: blob.type
+            });
+
             const url = window.URL.createObjectURL(blob);
             setAudioUrl(url);
             setShowAudioPlayer(true);
         } catch (error) {
-            console.error('Error generating TTS:', error);
-            alert('Failed to generate audio. Please try again.');
+            console.error('TTS generation failed:', error);
+            alert('Failed to generate audio. Please try again in a few moments.');
         } finally {
             setGeneratingTTS(false);
         }
