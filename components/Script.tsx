@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { InfoIcon, Zap, Copy, Check } from "lucide-react";
+import { InfoIcon, Zap, Copy, Check, User2, UserCircle } from "lucide-react";
 import {
     Tooltip,
     TooltipContent,
@@ -121,6 +121,9 @@ export function Script() {
     const [shouldGenerateOnSignIn, setShouldGenerateOnSignIn] = useState(false);
     const [hasCopied, setHasCopied] = useState(false);
     const [generatingTTS, setGeneratingTTS] = useState(false);
+    const [selectedVoice, setSelectedVoice] = useState('coral');
+    const [audioUrl, setAudioUrl] = useState<string | null>(null);
+    const [showAudioPlayer, setShowAudioPlayer] = useState(false);
 
     // Load saved inputs from cookies on mount
     useEffect(() => {
@@ -490,6 +493,8 @@ export function Script() {
     const handleGenerateTTS = async () => {
         if (!isSignedIn) return;
         setGeneratingTTS(true);
+        setAudioUrl(null);
+        setShowAudioPlayer(false);
         
         try {
             // First check if we have enough credits
@@ -508,7 +513,10 @@ export function Script() {
             const response = await fetch('/api/generate-tts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: generatedScript })
+                body: JSON.stringify({ 
+                    text: generatedScript,
+                    voice: selectedVoice
+                })
             });
 
             if (!response.ok) {
@@ -517,19 +525,24 @@ export function Script() {
 
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'tiktok-script.mp3';
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
+            setAudioUrl(url);
+            setShowAudioPlayer(true);
         } catch (error) {
             console.error('Error generating TTS:', error);
             alert('Failed to generate audio. Please try again.');
         } finally {
             setGeneratingTTS(false);
         }
+    };
+
+    const handleDownloadAudio = () => {
+        if (!audioUrl) return;
+        const a = document.createElement('a');
+        a.href = audioUrl;
+        a.download = 'tiktok-script.mp3';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     };
 
     return (
@@ -998,14 +1011,61 @@ export function Script() {
                         disabled={generatingTTS}
                         className="w-full flex items-center justify-center gap-2"
                     >
-                        {generatingTTS ? "Generating Audio..." : (
-                            <>
-                                Generate Audio{' '}
-                                <Zap className="h-4 w-4 text-yellow-500" />
-                                <span className="text-sm">1</span>
-                            </>
-                        )}
+                        <div className="flex items-center gap-2 flex-1">
+                            <div className="flex gap-1 items-center">
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedVoice('ash');
+                                    }}
+                                    className={`p-2 rounded-l border transition-colors ${
+                                        selectedVoice === 'ash'
+                                        ? 'bg-blue-100 border-blue-500 dark:bg-blue-900/50'
+                                        : 'border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800'
+                                    }`}
+                                >
+                                    <User2 className="h-4 w-4 text-blue-500" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedVoice('coral');
+                                    }}
+                                    className={`p-2 rounded-r border-t border-r border-b transition-colors ${
+                                        selectedVoice === 'coral'
+                                        ? 'bg-pink-100 border-pink-500 dark:bg-pink-900/50'
+                                        : 'border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800'
+                                    }`}
+                                >
+                                    <UserCircle className="h-4 w-4 text-pink-500" />
+                                </button>
+                            </div>
+                            {generatingTTS ? "Generating Audio..." : (
+                                <>
+                                    Generate Audio{' '}
+                                    <Zap className="h-4 w-4 text-yellow-500" />
+                                    <span className="text-sm">1</span>
+                                </>
+                            )}
+                        </div>
                     </Button>
+
+                    {showAudioPlayer && audioUrl && (
+                        <div className="mt-4 p-4 border rounded-lg dark:border-gray-700 space-y-4">
+                            <audio controls className="w-full">
+                                <source src={audioUrl} type="audio/mpeg" />
+                                Your browser does not support the audio element.
+                            </audio>
+                            <Button 
+                                onClick={handleDownloadAudio}
+                                className="w-full"
+                            >
+                                Download Audio
+                            </Button>
+                        </div>
+                    )}
                     
                     <div className="flex gap-2">
                         <Input

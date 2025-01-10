@@ -7,7 +7,7 @@ const openai = new OpenAI({
 
 export async function POST(req: Request) {
     try {
-        const { text } = await req.json();
+        const { text, voice } = await req.json();
 
         if (!text) {
             return NextResponse.json({ error: 'No text provided' }, { status: 400 });
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
 
         const mp3 = await openai.audio.speech.create({
             model: "tts-1",
-            voice: "alloy",
+            voice: voice || "alloy",
             input: text,
         });
 
