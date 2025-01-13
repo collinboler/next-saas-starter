@@ -540,8 +540,8 @@ export function Script() {
         } catch (error) {
             console.error('Detailed TTS error:', {
                 error,
-                message: error.message,
-                stack: error.stack
+                message: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined
             });
             alert('Failed to generate audio. Please try again in a few moments.');
         } finally {
