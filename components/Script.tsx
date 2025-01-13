@@ -258,7 +258,6 @@ export function Script() {
                 return;
             }
 
-            // If we have credits, generate the script
             const response = await fetch("/api/generate-script", {
                 method: "POST",
                 headers: {
@@ -279,6 +278,9 @@ export function Script() {
             setGeneratedCaption(data.caption);
             setGeneratedMedia(data.media || []);
             setGeneratedSources(data.sources || []);
+            
+            // Dispatch event to refresh token count
+            window.dispatchEvent(new Event('refreshTokenCount'));
         } catch (error) {
             console.error("Error generating script:", error);
             alert('Failed to generate script. Please try again.');
@@ -308,7 +310,6 @@ export function Script() {
                 return;
             }
 
-            // If we have credits, remix the script
             const response = await fetch("/api/generate-script", {
                 method: "POST",
                 headers: {
@@ -323,6 +324,9 @@ export function Script() {
             const data = await response.json();
             setGeneratedScript(data.script);
             setRemixInput("");
+            
+            // Dispatch event to refresh token count
+            window.dispatchEvent(new Event('refreshTokenCount'));
         } catch (error) {
             console.error("Error remixing script:", error);
             alert('Failed to remix script. Please try again.');
@@ -537,6 +541,9 @@ export function Script() {
             const url = window.URL.createObjectURL(blob);
             setAudioUrl(url);
             setShowAudioPlayer(true);
+            
+            // Dispatch event to refresh token count
+            window.dispatchEvent(new Event('refreshTokenCount'));
         } catch (error) {
             console.error('Detailed TTS error:', {
                 error,
@@ -558,6 +565,19 @@ export function Script() {
         a.click();
         document.body.removeChild(a);
     };
+
+    useEffect(() => {
+        const handleRefreshTokens = () => {
+            // Your token refresh logic here
+            fetchTokenCount(); // or whatever function you use to update the token count
+        };
+
+        window.addEventListener('refreshTokenCount', handleRefreshTokens);
+        
+        return () => {
+            window.removeEventListener('refreshTokenCount', handleRefreshTokens);
+        };
+    }, []);
 
     return (
         <div className="container mx-auto p-4 max-w-2xl">

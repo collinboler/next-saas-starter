@@ -73,9 +73,15 @@ export function CreditDisplay({ showAsDialog = false, trigger }: CreditDisplayPr
     };
 
     checkAndUpdateCredits();
-    // Poll for updates every minute
-    const interval = setInterval(checkAndUpdateCredits, 60000);
-    return () => clearInterval(interval);
+    // Remove polling and only use event-based refresh
+    const handleRefreshTokens = () => {
+      checkAndUpdateCredits();
+    };
+    window.addEventListener('refreshTokenCount', handleRefreshTokens);
+
+    return () => {
+      window.removeEventListener('refreshTokenCount', handleRefreshTokens);
+    };
   }, [user]);
 
   const addTestCredits = async () => {
