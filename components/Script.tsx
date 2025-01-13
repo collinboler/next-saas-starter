@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { InfoIcon, Zap, Copy, Check, User2, UserCircle } from "lucide-react";
+import { InfoIcon, Zap, Copy, Check, User2, UserCircle, Loader2 } from "lucide-react";
 import {
     Tooltip,
     TooltipContent,
@@ -510,11 +510,6 @@ export function Script() {
                 return;
             }
 
-            console.log('Attempting TTS generation with:', {
-                textLength: generatedScript.length,
-                voice: selectedVoice
-            });
-
             const response = await fetch('/api/generate-tts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -525,29 +520,29 @@ export function Script() {
             });
 
             if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
                 console.error('TTS API Error:', {
                     status: response.status,
-                    statusText: response.statusText
+                    statusText: response.statusText,
+                    error: errorData
                 });
-                throw new Error('Failed to generate audio');
+                throw new Error(`API Error: ${response.status} ${response.statusText}`);
             }
 
             const blob = await response.blob();
             if (blob.size === 0) {
-                console.error('Received empty audio blob');
-                throw new Error('Generated audio file is empty');
+                throw new Error('Received empty audio file');
             }
-
-            console.log('TTS generation successful:', {
-                blobSize: blob.size,
-                type: blob.type
-            });
 
             const url = window.URL.createObjectURL(blob);
             setAudioUrl(url);
             setShowAudioPlayer(true);
         } catch (error) {
-            console.error('TTS generation failed:', error);
+            console.error('Detailed TTS error:', {
+                error,
+                message: error.message,
+                stack: error.stack
+            });
             alert('Failed to generate audio. Please try again in a few moments.');
         } finally {
             setGeneratingTTS(false);
@@ -808,7 +803,12 @@ export function Script() {
                                 onClick={handleNextStep}
                                 disabled={referenceContent.includes('tiktok.com') && (processingVideo || !transcription)}
                             >
-                                {processingVideo ? "Processing Video..." : "Next"}
+                                {processingVideo ? (
+                                    <div className="flex items-center gap-2">
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Processing Video...
+                                    </div>
+                                ) : "Next"}
                             </Button>
                         </div>
                         <script async src="https://www.tiktok.com/embed.js"></script>
@@ -878,7 +878,11 @@ export function Script() {
                                 className="w-full"
                                 disabled={loading}
                             >
-                                {loading ? "Generating..." : (
+                                {loading ? (
+                                    <div className="flex items-center gap-2">
+                                        Generating <Loader2 className="h-4 w-4 animate-spin" />
+                                    </div>
+                                ) : (
                                     <>
                                         Generate Script{' '}
                                         <Zap className="h-4 w-4 ml-2 text-yellow-500" />
@@ -1061,7 +1065,11 @@ export function Script() {
                                     <UserCircle className="h-4 w-4 text-pink-500" />
                                 </button>
                             </div>
-                            {generatingTTS ? "Generating Audio..." : (
+                            {generatingTTS ? (
+                                <div className="flex items-center gap-2">
+                                    Generating Audio <Loader2 className="h-4 w-4 animate-spin" />
+                                </div>
+                            ) : (
                                 <>
                                     Generate Audio{' '}
                                     <Zap className="h-4 w-4 text-yellow-500" />
@@ -1098,7 +1106,11 @@ export function Script() {
                             disabled={loading || !remixInput.trim()}
                             className="flex items-center"
                         >
-                            {loading ? "Remixing..." : (
+                            {loading ? (
+                                <div className="flex items-center gap-2">
+                                    Remixing Script <Loader2 className="h-4 w-4 animate-spin" />
+                                </div>
+                            ) : (
                                 <>
                                     Remix{' '}
                                     <Zap className="h-4 w-4 ml-2 text-yellow-500" />
