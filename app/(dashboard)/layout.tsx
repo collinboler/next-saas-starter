@@ -15,6 +15,8 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Zap } from 'lucide-react';
 import { CreditDisplay } from '@/components/CreditDisplay';
 import { useUser } from '@clerk/nextjs';
+import { CreditCard } from 'lucide-react';
+import { PricingPage } from '@/components/PricingPage';
 
 
 export default function RootLayout({
@@ -82,6 +84,11 @@ function Header() {
                 <UserButton.UserProfilePage label="Credits" url="credits" labelIcon={<Zap className="h-4 w-4 text-yellow-500" />}>
                   <div className="p-4">
                     <CreditDisplay />
+                  </div>
+                </UserButton.UserProfilePage>
+                <UserButton.UserProfilePage label="Pricing" url="pricing" labelIcon={<CreditCard className="h-4 w-4 text-orange-500" />}>
+                  <div className="p-4">
+                    <PricingPage />
                   </div>
                 </UserButton.UserProfilePage>
               </UserButton>
