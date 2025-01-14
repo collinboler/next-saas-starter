@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { InfoIcon, Zap, Copy, Check, User2, UserCircle, Loader2 } from "lucide-react";
+import { InfoIcon, Zap, Copy, Check, User2, UserCircle, Loader2, FileEdit } from "lucide-react";
 import {
     Tooltip,
     TooltipContent,
@@ -124,6 +124,9 @@ export function Script() {
     const [selectedVoice, setSelectedVoice] = useState('coral');
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
     const [showAudioPlayer, setShowAudioPlayer] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedScript, setEditedScript] = useState("");
+    const [hasSaved, setHasSaved] = useState(false);
 
     // Load saved inputs from cookies on mount
     useEffect(() => {
@@ -183,6 +186,12 @@ export function Script() {
 
         fetchTrendingData();
     }, []);
+
+    useEffect(() => {
+        if (generatedScript) {
+            setEditedScript(generatedScript);
+        }
+    }, [generatedScript]);
 
     const handleShowMore = () => {
         const increment = 8;
@@ -579,6 +588,15 @@ export function Script() {
         };
     }, []);
 
+    const handleCopyOrSave = async () => {
+        if (isEditing) {
+            setGeneratedScript(editedScript);
+            setIsEditing(false);
+            setHasSaved(true);
+            setTimeout(() => setHasSaved(false), 1000);
+        }
+    };
+
     return (
         <div className="container mx-auto p-4 max-w-2xl">
             <h1 className="text-2xl font-bold mb-6">Script Generator</h1>
@@ -970,31 +988,62 @@ export function Script() {
                         </div>
                         
                         {activeTab === 'script' && (
-                            <div className="relative">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute right-0 top-0 text-muted-foreground hover:text-foreground"
-                                    onClick={() => copyToClipboard(generatedScript)}
-                                >
-                                    {hasCopied ? (
-                                        <Check className="h-4 w-4 text-green-500" />
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-sm font-medium">Generated Script</h3>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-muted-foreground hover:text-foreground"
+                                            onClick={() => isEditing ? handleCopyOrSave() : setIsEditing(true)}
+                                        >
+                                            {isEditing ? (
+                                                hasSaved ? (
+                                                    <Check className="h-4 w-4 text-green-500" />
+                                                ) : (
+                                                    <Check className="h-4 w-4" />
+                                                )
+                                            ) : (
+                                                <FileEdit className="h-4 w-4" />
+                                            )}
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-muted-foreground hover:text-foreground"
+                                            onClick={() => copyToClipboard(generatedScript)}
+                                        >
+                                            {hasCopied ? (
+                                                <Check className="h-4 w-4 text-green-500" />
+                                            ) : (
+                                                <Copy className="h-4 w-4" />
+                                            )}
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div className="relative bg-background rounded-lg p-4 border">
+                                    {isEditing ? (
+                                        <Textarea
+                                            value={editedScript}
+                                            onChange={(e) => setEditedScript(e.target.value)}
+                                            className="min-h-[200px] font-mono text-sm border-0 focus-visible:ring-0 p-0"
+                                        />
                                     ) : (
-                                        <Copy className="h-4 w-4" />
+                                        <FormattedText text={generatedScript} />
                                     )}
-                                </Button>
-                                <FormattedText text={generatedScript} />
+                                </div>
                             </div>
                         )}
-                        
+
                         {activeTab === 'caption' && (
-                            <div className="relative space-y-2">
-                                <p className="text-sm text-muted-foreground">Generated caption for your TikTok video:</p>
-                                <div className="relative">
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-sm font-medium">Generated Caption</h3>
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="absolute right-0 top-0 text-muted-foreground hover:text-foreground"
+                                        className="text-muted-foreground hover:text-foreground"
                                         onClick={() => copyToClipboard(generatedCaption)}
                                     >
                                         {hasCopied ? (
@@ -1003,48 +1052,54 @@ export function Script() {
                                             <Copy className="h-4 w-4" />
                                         )}
                                     </Button>
+                                </div>
+                                <div className="bg-background rounded-lg p-4 border">
                                     <FormattedText text={generatedCaption} />
                                 </div>
                             </div>
                         )}
 
-                        {activeTab === 'media' && (
+                        {activeTab === 'media' && generatedMedia.length > 0 && (
                             <div className="space-y-4">
-                                <p className="text-sm text-muted-foreground">Suggested media for your video:</p>
-                                <ul className="list-disc pl-5 space-y-2">
-                                    {generatedMedia.map((media, index) => (
-                                        <li key={index}>
-                                            <a 
-                                                href={media}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-blue-500 hover:text-blue-600 hover:underline"
-                                            >
-                                                {media}
-                                            </a>
-                                        </li>
-                                    ))}
-                                </ul>
+                                <h3 className="text-sm font-medium">Suggested Media</h3>
+                                <div className="bg-background rounded-lg p-4 border">
+                                    <ul className="list-disc pl-5 space-y-2">
+                                        {generatedMedia.map((media, index) => (
+                                            <li key={index}>
+                                                <a 
+                                                    href={media}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-500 hover:text-blue-600 hover:underline break-all"
+                                                >
+                                                    {media}
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
                             </div>
                         )}
 
-                        {activeTab === 'sources' && (
+                        {activeTab === 'sources' && generatedSources.length > 0 && (
                             <div className="space-y-4">
-                                <p className="text-sm text-muted-foreground">Sources used:</p>
-                                <ul className="list-disc pl-5 space-y-2">
-                                    {generatedSources.map((source, index) => (
-                                        <li key={index}>
-                                            <a 
-                                                href={source}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-blue-500 hover:text-blue-600 hover:underline"
-                                            >
-                                                {source}
-                                            </a>
-                                        </li>
-                                    ))}
-                                </ul>
+                                <h3 className="text-sm font-medium">Sources</h3>
+                                <div className="bg-background rounded-lg p-4 border">
+                                    <ul className="list-disc pl-5 space-y-2">
+                                        {generatedSources.map((source, index) => (
+                                            <li key={index}>
+                                                <a 
+                                                    href={source}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-500 hover:text-blue-600 hover:underline break-all"
+                                                >
+                                                    {source}
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
                             </div>
                         )}
                     </Card>
