@@ -577,8 +577,8 @@ export function Script() {
 
     useEffect(() => {
         const handleRefreshTokens = () => {
-            // Your token refresh logic here
-            fetchTokenCount(); // or whatever function you use to update the token count
+            // Dispatch event to refresh token count
+            window.dispatchEvent(new Event('refreshTokenCount'));
         };
 
         window.addEventListener('refreshTokenCount', handleRefreshTokens);
