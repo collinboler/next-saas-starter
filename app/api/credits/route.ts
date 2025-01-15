@@ -1,163 +1,95 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getAuth } from '@clerk/nextjs/server';
-import { createClerkClient } from '@clerk/backend';
+import { NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
+import { clerkClient } from '@clerk/clerk-sdk-node';
 
-if (!process.env.CLERK_SECRET_KEY) {
-  throw new Error('Missing CLERK_SECRET_KEY environment variable');
-}
-
-const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
-
-// Get credits
-export async function GET(request: NextRequest) {
+export async function GET(req: Request) {
   try {
-    const { userId } = await getAuth(request);
-    
+    const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const user = await clerk.users.getUser(userId);
-    return NextResponse.json({
-      credits: user.publicMetadata.credits || 0,
-      lastReset: user.publicMetadata.lastCreditReset
-    });
-  } catch (error) {
-    console.error('GET - Error:', error);
-    return NextResponse.json({ 
-      error: 'Failed to get credits',
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
-  }
-}
-
-// Initialize or reset credits
-export async function POST(request: NextRequest) {
-  try {
-    const { userId } = await getAuth(request);
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await clerk.users.getUser(userId);
-    const lastReset = user.publicMetadata.lastCreditReset as string;
-    const now = new Date();
-    const est = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
-    
-    // If no lastReset or it's a new day in EST, reset credits
-    if (!lastReset || new Date(lastReset).toDateString() !== est.toDateString()) {
-      await clerk.users.updateUser(userId, {
-        publicMetadata: {
-          ...user.publicMetadata,
-          credits: 10,
-          lastCreditReset: est.toISOString()
-        }
-      });
-
-      return NextResponse.json({
-        success: true,
-        credits: 10,
-        lastReset: est.toISOString()
-      });
+    const user = await clerkClient.users.getUser(userId);
+    if (!user) {
+      return new NextResponse('User not found', { status: 404 });
     }
 
     return NextResponse.json({
-      success: false,
-      message: 'Credits can only be reset once per day',
-      credits: user.publicMetadata.credits,
-      lastReset
+      credits: user.privateMetadata.credits || 0,
+      lastReset: user.privateMetadata.lastCreditReset || null,
     });
   } catch (error) {
-    console.error('POST - Error:', error);
-    return NextResponse.json({ 
-      error: 'Failed to reset credits',
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    console.error('Failed to get credits:', error);
+    return new NextResponse('Failed to get credits', { status: 500 });
   }
 }
 
-// Add test credits
-export async function PATCH(request: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const { userId } = await getAuth(request);
-    console.log('PATCH - userId:', userId);
-    
+    const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const user = await clerk.users.getUser(userId);
-    console.log('PATCH - current metadata:', user.publicMetadata);
-    
-    const currentCredits = (user.publicMetadata.credits as number) || 0;
-    const newCredits = currentCredits + 10;
-    
-    console.log('PATCH - updating credits:', currentCredits, '->', newCredits);
-    
-    await clerk.users.updateUser(userId, {
-      publicMetadata: {
-        ...user.publicMetadata,
-        credits: newCredits,
-        lastCreditReset: user.publicMetadata.lastCreditReset || new Date().toISOString()
-      }
+    const user = await clerkClient.users.getUser(userId);
+    if (!user) {
+      return new NextResponse('User not found', { status: 404 });
+    }
+
+    const isPro = user.publicMetadata.subscriptionStatus === 'active';
+    const dailyCredits = isPro ? 100 : 10;
+
+    await clerkClient.users.updateUser(userId, {
+      privateMetadata: {
+        ...user.privateMetadata,
+        credits: dailyCredits,
+        lastCreditReset: new Date().toISOString(),
+      },
     });
 
     return NextResponse.json({
-      success: true,
-      previousCredits: currentCredits,
-      credits: newCredits,
-      message: 'Added 10 test credits'
+      credits: dailyCredits,
+      lastReset: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('PATCH - Error:', error);
-    return NextResponse.json({ 
-      error: 'Failed to add credits',
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    console.error('Failed to reset credits:', error);
+    return new NextResponse('Failed to reset credits', { status: 500 });
   }
 }
 
-// Use credits
-export async function PUT(request: NextRequest) {
+export async function PUT(req: Request) {
   try {
-    const { userId } = await getAuth(request);
+    const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const { action } = await request.json();
+    const user = await clerkClient.users.getUser(userId);
+    if (!user) {
+      return new NextResponse('User not found', { status: 404 });
+    }
+
+    const { action } = await req.json();
+    const currentCredits = (user.privateMetadata.credits as number) || 0;
     const creditCost = action === 'create' ? 2 : action === 'remix' ? 1 : 1;
 
-    const user = await clerk.users.getUser(userId);
-    const currentCredits = (user.publicMetadata.credits as number) || 0;
-
     if (currentCredits < creditCost) {
-      return NextResponse.json({
-        success: false,
-        error: `Insufficient credits. Need ${creditCost} credits for this action.`,
-        credits: currentCredits
-      }, { status: 400 });
+      return new NextResponse('Insufficient credits', { status: 400 });
     }
 
-    await clerk.users.updateUser(userId, {
-      publicMetadata: {
-        ...user.publicMetadata,
-        credits: currentCredits - creditCost
-      }
+    await clerkClient.users.updateUser(userId, {
+      privateMetadata: {
+        ...user.privateMetadata,
+        credits: currentCredits - creditCost,
+      },
     });
 
     return NextResponse.json({
-      success: true,
       credits: currentCredits - creditCost,
-      action,
-      creditCost
+      lastReset: user.privateMetadata.lastCreditReset,
     });
   } catch (error) {
-    console.error('PUT - Error:', error);
-    return NextResponse.json({ 
-      error: 'Failed to use credits',
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    console.error('Failed to update credits:', error);
+    return new NextResponse('Failed to update credits', { status: 500 });
   }
 } 

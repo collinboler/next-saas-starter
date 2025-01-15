@@ -1,11 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, Zap } from 'lucide-react';
+import { Check, Zap, CreditCard } from 'lucide-react';
 import { useUser } from '@clerk/nextjs';
 import { loadStripe } from '@stripe/stripe-js';
-
-const stripePromise = loadStripe(process.env.STRIPE_PUBLIC_KEY!);
 
 interface PricingFeature {
   name: string;
@@ -31,13 +29,31 @@ export function PricingPage() {
 
     try {
       setIsLoading(true);
+      
+      // Initialize Stripe only when needed
+      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
+      if (!stripe) {
+        throw new Error('Failed to load Stripe');
+      }
+
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create checkout session');
+      }
+      
       const { sessionId } = await response.json();
-
-      const stripe = await stripePromise;
-      await stripe?.redirectToCheckout({ sessionId });
+      const { error } = await stripe.redirectToCheckout({ sessionId });
+      
+      if (error) {
+        throw error;
+      }
     } catch (error) {
       console.error('Error:', error);
       alert('Failed to start checkout process. Please try again.');
@@ -46,7 +62,101 @@ export function PricingPage() {
     }
   };
 
+  const handleManageSubscription = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/create-portal-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to access subscription portal');
+      }
+      
+      const { url } = await response.json();
+      window.location.href = url;
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to access subscription management. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Check subscription status from public metadata
   const isSubscribed = user?.publicMetadata?.subscriptionStatus === 'active';
+
+  // Force a re-render when subscription status changes
+  useEffect(() => {
+    if (user) {
+      const checkSubscriptionStatus = async () => {
+        try {
+          await user.reload();
+        } catch (error) {
+          console.error('Error reloading user:', error);
+        }
+      };
+      checkSubscriptionStatus();
+    }
+  }, [user]);
+
+  // Add an interval to periodically check subscription status
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (user) {
+        user.reload().catch(console.error);
+      }
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [user]);
+
+  if (isSubscribed) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card className="max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Current Plan: Pro
+              <Zap className="h-5 w-5 text-yellow-500" />
+            </CardTitle>
+            <CardDescription>
+              You're subscribed to the Pro plan
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">
+                Enjoy all Pro features:
+              </div>
+              <ul className="space-y-2">
+                {features.filter(f => f.pro).map((feature, index) => (
+                  <li key={index} className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-500" />
+                    <span>{feature.name}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button
+              onClick={handleManageSubscription}
+              className="w-full"
+              disabled={isLoading}
+            >
+              <CreditCard className="h-4 w-4 mr-2" />
+              {isLoading ? 'Loading...' : 'Manage Subscription'}
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

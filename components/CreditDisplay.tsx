@@ -25,55 +25,55 @@ export function CreditDisplay({ showAsDialog = false, trigger }: CreditDisplayPr
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingCredits, setIsAddingCredits] = useState(false);
 
-  useEffect(() => {
-    const checkAndUpdateCredits = async () => {
-      if (!user) return;
+  const checkAndUpdateCredits = async () => {
+    if (!user) return;
 
-      try {
-        // First try to get credits, this will return 0 if not initialized
-        const getResponse = await fetch('/api/credits');
-        const getData = await getResponse.json();
+    try {
+      // First try to get credits, this will return 0 if not initialized
+      const getResponse = await fetch('/api/credits');
+      const getData = await getResponse.json();
+      
+      // If credits are 0 and no lastReset, we need to initialize
+      if (getData.credits === 0 && !getData.lastReset) {
+        console.log('Initializing credits for new user...');
+        const initResponse = await fetch('/api/credits', { method: 'POST' });
+        const initData = await initResponse.json();
         
-        // If credits are 0 and no lastReset, we need to initialize
-        if (getData.credits === 0 && !getData.lastReset) {
-          console.log('Initializing credits for new user...');
-          const initResponse = await fetch('/api/credits', { method: 'POST' });
-          const initData = await initResponse.json();
+        if (initResponse.ok) {
+          setCredits(initData.credits);
+          setLastReset(initData.lastReset);
+        }
+      } else {
+        // Check if we need to reset for a new day
+        const now = new Date();
+        const est = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+        const lastResetDate = getData.lastReset ? new Date(getData.lastReset) : new Date(0);
+        const estLastReset = new Date(lastResetDate.toLocaleString("en-US", { timeZone: "America/New_York" }));
+
+        if (est.toDateString() !== estLastReset.toDateString()) {
+          console.log('Resetting credits for new day...');
+          const resetResponse = await fetch('/api/credits', { method: 'POST' });
+          const resetData = await resetResponse.json();
           
-          if (initResponse.ok) {
-            setCredits(initData.credits);
-            setLastReset(initData.lastReset);
+          if (resetResponse.ok) {
+            setCredits(resetData.credits);
+            setLastReset(resetData.lastReset);
           }
         } else {
-          // Check if we need to reset for a new day
-          const now = new Date();
-          const est = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
-          const lastResetDate = getData.lastReset ? new Date(getData.lastReset) : new Date(0);
-          const estLastReset = new Date(lastResetDate.toLocaleString("en-US", { timeZone: "America/New_York" }));
-
-          if (est.toDateString() !== estLastReset.toDateString()) {
-            console.log('Resetting credits for new day...');
-            const resetResponse = await fetch('/api/credits', { method: 'POST' });
-            const resetData = await resetResponse.json();
-            
-            if (resetResponse.ok) {
-              setCredits(resetData.credits);
-              setLastReset(resetData.lastReset);
-            }
-          } else {
-            setCredits(getData.credits);
-            setLastReset(getData.lastReset);
-          }
+          setCredits(getData.credits);
+          setLastReset(getData.lastReset);
         }
-      } catch (error) {
-        console.error('Failed to manage credits:', error);
-      } finally {
-        setIsLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('Failed to manage credits:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     checkAndUpdateCredits();
-    // Remove polling and only use event-based refresh
+    
     const handleRefreshTokens = () => {
       checkAndUpdateCredits();
     };
@@ -83,6 +83,13 @@ export function CreditDisplay({ showAsDialog = false, trigger }: CreditDisplayPr
       window.removeEventListener('refreshTokenCount', handleRefreshTokens);
     };
   }, [user]);
+
+  // Add effect to check credits when subscription status changes
+  useEffect(() => {
+    if (user) {
+      checkAndUpdateCredits();
+    }
+  }, [user?.publicMetadata?.subscriptionStatus]);
 
   const addTestCredits = async () => {
     try {
@@ -112,41 +119,35 @@ export function CreditDisplay({ showAsDialog = false, trigger }: CreditDisplayPr
     }
   };
 
-  const CreditContent = () => (
-    <Card className="w-full max-w-xs border-0 shadow-none">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Zap className="h-4 w-4 text-yellow-500" />
-          Credits Remaining
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <p className="text-2xl font-bold">
-            {isLoading ? 'Loading...' : credits}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Resets daily at midnight EST
-            {lastReset && (
-              <span className="block">
-                Last reset: {new Date(lastReset).toLocaleString()}
-              </span>
-            )}
-          </p>
-        </div>
-{/*         
-        <Button 
-          onClick={addTestCredits} 
-          variant="outline" 
-          size="sm"
-          className="w-full"
-          disabled={isAddingCredits}
-        >
-          {isAddingCredits ? 'Adding Credits...' : 'Add 10 Test Credits'}
-        </Button> */}
-      </CardContent>
-    </Card>
-  );
+  const CreditContent = () => {
+    const isPro = user?.publicMetadata?.subscriptionStatus === 'active';
+    
+    return (
+      <Card className="w-full max-w-xs border-0 shadow-none">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <Zap className="h-4 w-4 text-yellow-500" />
+            Credits Remaining
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <p className="text-2xl font-bold">
+              {isLoading ? 'Loading...' : credits}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Resets daily at midnight EST ({isPro ? '100' : '10'} credits per day)
+              {lastReset && (
+                <span className="block">
+                  Last reset: {new Date(lastReset).toLocaleString()}
+                </span>
+              )}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   if (showAsDialog) {
     return (
