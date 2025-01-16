@@ -350,55 +350,77 @@ export function Script() {
     const handleVideoProcess = async (url: string) => {
         setProcessingVideo(true);
         try {
-            // Clean up the TikTok URL by removing query parameters
-            const cleanUrl = url.split('?')[0];
-            
-            // First get the oEmbed data
-            const oembedResponse = await fetch(
-                `https://www.tiktok.com/oembed?url=${encodeURIComponent(cleanUrl)}`
-            );
-            
-            if (!oembedResponse.ok) {
-                throw new Error('Failed to fetch TikTok embed data');
-            }
-            
-            const oembedData = await oembedResponse.json();
-            setEmbedHtml(oembedData.html);
-            setVideoMetadata({
-                author: oembedData.author_name || '',
-                caption: oembedData.title || ''
-            });
+            if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                // Process YouTube video
+                const response = await fetch('/api/process-youtube', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url }),
+                });
 
-            // Extract additional metadata from oEmbed response
-            const metadata = {
-                caption: oembedData.title || '',
-                username: oembedData.author_name || '',
-                soundTitle: oembedData.music_name || '',
-                soundLink: oembedData.music_url || '',
-            };
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to process video');
+                }
 
-            // Then get the transcription with additional metadata
-            const response = await fetch('/api/process-tiktok', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    url: cleanUrl,
-                    metadata 
-                }),
-            });
+                const data = await response.json();
+                if (data.transcription) {
+                    setTranscription(data.transcription);
+                    setReferenceContent(url);
+                }
+            } else if (url.includes('tiktok.com')) {
+                // Clean up the TikTok URL by removing query parameters
+                const cleanUrl = url.split('?')[0];
+                
+                // First get the oEmbed data
+                const oembedResponse = await fetch(
+                    `https://www.tiktok.com/oembed?url=${encodeURIComponent(cleanUrl)}`
+                );
+                
+                if (!oembedResponse.ok) {
+                    throw new Error('Failed to fetch TikTok embed data');
+                }
+                
+                const oembedData = await oembedResponse.json();
+                setEmbedHtml(oembedData.html);
+                setVideoMetadata({
+                    author: oembedData.author_name || '',
+                    caption: oembedData.title || ''
+                });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to process video');
-            }
+                // Extract additional metadata from oEmbed response
+                const metadata = {
+                    caption: oembedData.title || '',
+                    username: oembedData.author_name || '',
+                    soundTitle: oembedData.music_name || '',
+                    soundLink: oembedData.music_url || '',
+                };
 
-            const data = await response.json();
-            if (data.transcription) {
-                // Extract just the transcription part from the enriched response
-                const transcriptionOnly = data.transcription.split('Transcription:')[1]?.trim() || data.transcription;
-                setTranscription(transcriptionOnly);
+                // Then get the transcription with additional metadata
+                const response = await fetch('/api/process-tiktok', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        url: cleanUrl,
+                        metadata 
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to process video');
+                }
+
+                const data = await response.json();
+                if (data.transcription) {
+                    // Extract just the transcription part from the enriched response
+                    const transcriptionOnly = data.transcription.split('Transcription:')[1]?.trim() || data.transcription;
+                    setTranscription(transcriptionOnly);
+                }
             }
         } catch (error) {
             console.error('Error processing video:', error);
@@ -815,52 +837,115 @@ export function Script() {
                 {currentStep === 2 && !generatedScript && (
                     <div className="space-y-4">
                         <Label htmlFor="referenceContent">
-                            <b>[2/2]</b> Input TikTok Video URL for style reference <i>(Optional)</i>
+                            <b>[2/2]</b> Input TikTok Video URL or upload MP3/MP4 file for style reference <i>(Optional)</i>
                         </Label>
                         <div className="space-y-2">
-                            <Input
-                                id="referenceContent"
-                                placeholder="Paste TikTok video URL"
-                                value={referenceContent}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                    const newValue = e.target.value;
-                                    setReferenceContent(newValue);
-                                    // Reset video and transcription when input changes
-                                    setVideoUrl(null);
-                                    setTranscription(null);
-                                    
-                                    // Auto-process if it's a TikTok URL
-                                    if (newValue.includes('tiktok.com')) {
-                                        handleVideoProcess(newValue);
-                                    }
-                                }}
-                            />
+                            {!referenceContent.startsWith('Uploaded file:') && (
+                                <Input
+                                    id="referenceContent"
+                                    placeholder="Paste TikTok or YouTube video URL"
+                                    value={referenceContent}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                        const newValue = e.target.value;
+                                        setReferenceContent(newValue);
+                                        // Reset video and transcription when input changes
+                                        setVideoUrl(null);
+                                        setTranscription(null);
+                                        
+                                        // Auto-process if it's a video URL
+                                        if (newValue.includes('tiktok.com') || newValue.includes('youtube.com') || newValue.includes('youtu.be')) {
+                                            handleVideoProcess(newValue);
+                                        }
+                                    }}
+                                />
+                            )}
+                            {!referenceContent.includes('tiktok.com') && (
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        type="file"
+                                        accept=".mp3,.mp4"
+                                        onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            
+                                            setProcessingVideo(true);
+                                            const formData = new FormData();
+                                            formData.append('file', file);
+                                            
+                                            try {
+                                                const response = await fetch('/api/process-upload', {
+                                                    method: 'POST',
+                                                    body: formData,
+                                                });
+                                                
+                                                if (!response.ok) {
+                                                    throw new Error('Failed to process file');
+                                                }
+                                                
+                                                const data = await response.json();
+                                                setTranscription(data.transcription);
+                                                setReferenceContent(`Uploaded file: ${file.name}`);
+                                            } catch (error) {
+                                                console.error('Error processing file:', error);
+                                                alert('Failed to process file. Please try again.');
+                                            } finally {
+                                                setProcessingVideo(false);
+                                            }
+                                        }}
+                                        className="cursor-pointer"
+                                    />
+                                </div>
+                            )}
+                            {referenceContent && (
+                                <Button 
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full"
+                                    onClick={() => {
+                                        setReferenceContent('');
+                                        setVideoUrl(null);
+                                        setTranscription(null);
+                                        setEmbedHtml(null);
+                                        setVideoMetadata(null);
+                                    }}
+                                >
+                                    Clear Reference
+                                </Button>
+                            )}
                             <Button 
                                 type="button"
                                 className="w-full"
                                 onClick={handleNextStep}
-                                disabled={referenceContent.includes('tiktok.com') && (processingVideo || !transcription)}
+                                disabled={!!referenceContent && (processingVideo || !transcription)}
                             >
                                 {processingVideo ? (
                                     <div className="flex items-center gap-2">
                                         <Loader2 className="h-4 w-4 animate-spin" />
-                                        Processing Video...
+                                        Processing...
                                     </div>
                                 ) : "Next"}
                             </Button>
                         </div>
                         <script async src="https://www.tiktok.com/embed.js"></script>
                         
-                        {referenceContent.includes('tiktok.com') && (
+                        {(referenceContent.includes('tiktok.com') || referenceContent.includes('youtube.com') || referenceContent.includes('youtu.be') || referenceContent.startsWith('Uploaded file:')) && (
                             <div className="mt-4 space-y-4">
                                 {embedHtml ? (
                                     <div 
                                         className="relative aspect-video w-full"
                                         dangerouslySetInnerHTML={{ __html: embedHtml }}
                                     />
+                                ) : referenceContent.startsWith('Uploaded file:') ? (
+                                    <div className="w-full bg-gray-100 dark:bg-gray-900 rounded-lg p-4">
+                                        <p className="text-gray-500">{referenceContent}</p>
+                                    </div>
+                                ) : referenceContent.includes('youtube.com') || referenceContent.includes('youtu.be') ? (
+                                    <div className="w-full bg-gray-100 dark:bg-gray-900 rounded-lg p-4">
+                                        <p className="text-gray-500">YouTube Video: {referenceContent}</p>
+                                    </div>
                                 ) : (
                                     <div className="w-full h-64 bg-gray-100 dark:bg-gray-900 rounded-lg flex items-center justify-center">
-                                        <p className="text-gray-500">Loading TikTok embed...</p>
+                                        <p className="text-gray-500">Loading video embed...</p>
                                     </div>
                                 )}
                                 {transcription && (
