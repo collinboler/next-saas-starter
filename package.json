@@ -62,11 +62,13 @@
     "tailwindcss-animate": "^1.0.7",
     "tailwindcss-react-aria-components": "1.1.6",
     "typescript": "^5.6.3",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "python-shell": "^5.0.0"
   },
   "devDependencies": {
     "critters": "^0.0.25",
     "cssnano": "^7.0.6",
-    "postcss-nesting": "^13.0.1"
+    "postcss-nesting": "^13.0.1",
+    "@types/python-shell": "^1.0.3"
   }
 }

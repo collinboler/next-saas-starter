@@ -1,10 +1,5 @@
 import { NextRequest } from 'next/server';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { writeFile } from 'fs/promises';
-import path from 'path';
-
-const execAsync = promisify(exec);
+import { PythonShell } from 'python-shell';
 
 function getVideoId(youtubeUrl: string): string {
     if (youtubeUrl.includes("watch?v=")) {
@@ -20,37 +15,64 @@ export async function POST(req: NextRequest) {
         const { url } = await req.json();
         const videoId = getVideoId(url);
 
-        // Create a temporary Python script
-        const scriptContent = `
+        // Use python-shell to run the code directly
+        const options = {
+            mode: 'text' as const,
+            pythonOptions: ['-u'],
+            pythonPath: 'python3',
+            args: [videoId]
+        };
+
+        const script = `
+import sys
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api.formatters import TextFormatter
 
 def fetch_transcript(video_id):
     try:
+        print(f"Fetching transcript for video ID: {video_id}", file=sys.stderr)
         transcript = YouTubeTranscriptApi.get_transcript(video_id)
         formatter = TextFormatter()
-        return formatter.format_transcript(transcript)
+        formatted_transcript = formatter.format_transcript(transcript)
+        print("Successfully fetched and formatted transcript", file=sys.stderr)
+        return formatted_transcript
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error fetching transcript: {str(e)}", file=sys.stderr)
         return None
 
-video_id = "${videoId}"
-transcript = fetch_transcript(video_id)
-if transcript:
-    print(transcript)
+if __name__ == "__main__":
+    video_id = sys.argv[1]
+    print(f"Processing video ID: {video_id}", file=sys.stderr)
+    transcript = fetch_transcript(video_id)
+    if transcript:
+        print(transcript)
+    else:
+        print("No transcript available", file=sys.stderr)
+        sys.exit(1)
 `;
 
-        // Write the script to a temporary file
-        const scriptPath = path.join(process.cwd(), 'temp_script.py');
-        await writeFile(scriptPath, scriptContent);
+        // Run the Python code
+        const result = await new Promise<string>((resolve, reject) => {
+            let output = '';
+            let error = '';
 
-        // Execute the Python script
-        const { stdout, stderr } = await execAsync('python3 temp_script.py');
-
-        if (stderr) {
-            console.error('Python script error:', stderr);
-            throw new Error('Failed to fetch YouTube transcript');
-        }
+            try {
+                PythonShell.runString(script, options).then(results => {
+                    if (results && results.length > 0) {
+                        output = results.join('\n');
+                        resolve(output);
+                    } else {
+                        reject(new Error('No transcript found'));
+                    }
+                }).catch(err => {
+                    console.error('Python error:', err);
+                    reject(new Error(err.message));
+                });
+            } catch (err) {
+                console.error('Python execution error:', err);
+                reject(err);
+            }
+        });
 
         // Format the response similar to TikTok processing
         const enrichedTranscription = `
@@ -60,7 +82,7 @@ if transcript:
         URL: ${url}
 
         Transcription:
-        ${stdout}`;
+        ${result}`;
 
         return Response.json({
             success: true,

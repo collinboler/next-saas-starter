@@ -128,6 +128,9 @@ importers:
       postgres:
         specifier: ^3.4.5
         version: 3.4.5
+      python-shell:
+        specifier: ^5.0.0
+        version: 5.0.0
       react:
         specifier: 19.0.0-rc-cd22717c-20241013
         version: 19.0.0-rc-cd22717c-20241013
@@ -159,6 +162,9 @@ importers:
         specifier: ^3.23.8
         version: 3.23.8
     devDependencies:
+      '@types/python-shell':
+        specifier: ^1.0.3
+        version: 1.0.3
       critters:
         specifier: ^0.0.25
         version: 0.0.25
@@ -1208,6 +1214,10 @@ packages:
 
   '@types/prop-types@15.7.13':
     resolution: {integrity: sha512-hCZTSvwbzWGvhqxp/RqVqwU999pBf2vp7hzIjiYOsl8wqOmUxkQ6ddw1cV3l8811+kdUFus/q4d1Y3E3SyEifA==}
+
+  '@types/python-shell@1.0.3':
+    resolution: {integrity: sha512-laT15PQn3vFl8cHN0/XVven9wBs+rlgsdZ44h18EDZ7gETgX3q4h5BD4MlLvZjyujB3AyzkOjs1GSK1vgT/uiA==}
+    deprecated: This is a stub types definition. python-shell provides its own type definitions, so you do not need this installed.
 
   '@types/react@18.3.12':
     resolution: {integrity: sha512-D2wOSq/d6Agt28q7rSI3jhU7G6aiuzljDGZ2hTZHIkrTLUI+AF3WMeKkEZ9nN2fkBAlcktT6vcZjDFiIhMYEQw==}
@@ -2276,6 +2286,10 @@ packages:
   postgres@3.4.5:
     resolution: {integrity: sha512-cDWgoah1Gez9rN3H4165peY9qfpEo+SA61oQv65O3cRUE1pOEoJWwddwcqKE8XZYjbblOJlYDlLV4h67HrEVDg==}
     engines: {node: '>=12'}
+
+  python-shell@5.0.0:
+    resolution: {integrity: sha512-RUOOOjHLhgR1MIQrCtnEqz/HJ1RMZBIN+REnpSUrfft2bXqXy69fwJASVziWExfFXsR1bCY0TznnHooNsCo0/w==}
+    engines: {node: '>=0.10'}
 
   qs@6.13.0:
     resolution: {integrity: sha512-+38qI9SOr8tfZ4QmJNplMUxqjbe7LKvvZgWdExBOmd+egZTtjLB67Gu0HRX3u/XOq7UU2Nx6nsjvS16Z9uwfpg==}
@@ -3500,6 +3514,10 @@ snapshots:
 
   '@types/prop-types@15.7.13': {}
 
+  '@types/python-shell@1.0.3':
+    dependencies:
+      python-shell: 5.0.0
+
   '@types/react@18.3.12':
     dependencies:
       '@types/prop-types': 15.7.13
@@ -4396,6 +4414,8 @@ snapshots:
       source-map-js: 1.2.1
 
   postgres@3.4.5: {}
+
+  python-shell@5.0.0: {}
 
   qs@6.13.0:
     dependencies:

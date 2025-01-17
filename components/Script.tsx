@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { InfoIcon, Zap, Copy, Check, User2, UserCircle, Loader2, FileEdit } from "lucide-react";
+import { InfoIcon, Zap, Copy, Check, User2, UserCircle, Loader2, FileEdit, X } from "lucide-react";
 import {
     Tooltip,
     TooltipContent,
@@ -624,9 +624,9 @@ export function Script() {
             <h1 className="text-2xl font-bold mb-6">Script Generator</h1>
             <form onSubmit={handleSubmit} className="space-y-6">
                 {currentStep === 1 && (
+                    
                     <div className="space-y-4">
                         <Label htmlFor="scriptTopic"><b>[1/2]</b> What's your video about?</Label>
-
                         <Textarea
                             id="scriptTopic"
                             placeholder="Enter your script topic or idea..."
@@ -841,23 +841,42 @@ export function Script() {
                         </Label>
                         <div className="space-y-2">
                             {!referenceContent.startsWith('Uploaded file:') && (
-                                <Input
-                                    id="referenceContent"
-                                    placeholder="Paste TikTok or YouTube video URL"
-                                    value={referenceContent}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                        const newValue = e.target.value;
-                                        setReferenceContent(newValue);
-                                        // Reset video and transcription when input changes
-                                        setVideoUrl(null);
-                                        setTranscription(null);
-                                        
-                                        // Auto-process if it's a video URL
-                                        if (newValue.includes('tiktok.com') || newValue.includes('youtube.com') || newValue.includes('youtu.be')) {
-                                            handleVideoProcess(newValue);
-                                        }
-                                    }}
-                                />
+                                <div className="relative">
+                                    <Input
+                                        id="referenceContent"
+                                        placeholder="Paste TikTok or YouTube video URL"
+                                        value={referenceContent}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                            const newValue = e.target.value;
+                                            setReferenceContent(newValue);
+                                            // Reset video and transcription when input changes
+                                            setVideoUrl(null);
+                                            setTranscription(null);
+                                            
+                                            // Auto-process if it's a video URL
+                                            if (newValue.includes('tiktok.com') || newValue.includes('youtube.com') || newValue.includes('youtu.be')) {
+                                                handleVideoProcess(newValue);
+                                            }
+                                        }}
+                                    />
+                                    {referenceContent && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6"
+                                            onClick={() => {
+                                                setReferenceContent('');
+                                                setVideoUrl(null);
+                                                setTranscription(null);
+                                                setEmbedHtml(null);
+                                                setVideoMetadata(null);
+                                            }}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
                             )}
                             {!referenceContent.includes('tiktok.com') && (
                                 <div className="flex items-center gap-2">
@@ -895,22 +914,6 @@ export function Script() {
                                         className="cursor-pointer"
                                     />
                                 </div>
-                            )}
-                            {referenceContent && (
-                                <Button 
-                                    type="button"
-                                    variant="outline"
-                                    className="w-full"
-                                    onClick={() => {
-                                        setReferenceContent('');
-                                        setVideoUrl(null);
-                                        setTranscription(null);
-                                        setEmbedHtml(null);
-                                        setVideoMetadata(null);
-                                    }}
-                                >
-                                    Clear Reference
-                                </Button>
                             )}
                             <Button 
                                 type="button"
