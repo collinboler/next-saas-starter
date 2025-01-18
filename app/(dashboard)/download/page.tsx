@@ -4,13 +4,16 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Download } from "lucide-react";
+import { Loader2, Download, Lock } from "lucide-react";
 import { useSearchParams } from 'next/navigation';
+import { SignInButton, useUser } from "@clerk/nextjs";
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second
+const URL_STORAGE_KEY = 'lastTikTokUrl';
 
 export default function DownloadPage() {
+    const { isSignedIn, isLoaded } = useUser();
     const searchParams = useSearchParams();
     const [url, setUrl] = useState('');
     const [loading, setLoading] = useState(false);
@@ -18,12 +21,27 @@ export default function DownloadPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        // Check URL parameter first
         const urlParam = searchParams.get('url');
         if (urlParam) {
             setUrl(urlParam);
             handleDownload(urlParam);
+            localStorage.setItem(URL_STORAGE_KEY, urlParam);
+            return;
         }
-    }, [searchParams]);
+
+        // If no URL parameter, check localStorage
+        const storedUrl = localStorage.getItem(URL_STORAGE_KEY);
+        if (storedUrl) {
+            setUrl(storedUrl);
+            handleDownload(storedUrl);
+        }
+    }, [searchParams, isSignedIn]); // Re-run when auth state changes
+
+    const handleUrlChange = (newUrl: string) => {
+        setUrl(newUrl);
+        localStorage.setItem(URL_STORAGE_KEY, newUrl);
+    };
 
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -55,7 +73,6 @@ export default function DownloadPage() {
         setDownloadLinks(null);
 
         try {
-            // Clean up the URL
             const cleanUrl = videoUrl.split('?')[0];
             console.log('Processing URL:', cleanUrl);
 
@@ -91,6 +108,11 @@ export default function DownloadPage() {
     };
 
     const downloadFile = async (url: string, filename: string) => {
+        if (!isSignedIn) {
+            setError('Please sign in to download files');
+            return;
+        }
+
         try {
             const response = await fetch(url);
             const blob = await response.blob();
@@ -108,6 +130,32 @@ export default function DownloadPage() {
         }
     };
 
+    const DownloadButton = ({ url, filename, variant = "default" }: { url: string; filename: string; variant?: "default" | "outline" }) => {
+        if (!isLoaded) return null;
+
+        if (!isSignedIn) {
+            return (
+                <SignInButton mode="modal">
+                    <Button variant={variant} className="w-full">
+                        <Lock className="mr-2 h-4 w-4" />
+                        Sign in to Download
+                    </Button>
+                </SignInButton>
+            );
+        }
+
+        return (
+            <Button 
+                onClick={() => downloadFile(url, filename)}
+                variant={variant}
+                className="w-full"
+            >
+                <Download className="mr-2 h-4 w-4" />
+                Download {filename.includes('video') ? 'Video' : 'Audio'}
+            </Button>
+        );
+    };
+
     return (
         <div className="container mx-auto p-4 max-w-2xl">
             <h1 className="text-2xl font-bold mb-6">TikTok Video Downloader</h1>
@@ -119,7 +167,7 @@ export default function DownloadPage() {
                         id="tiktokUrl"
                         placeholder="Paste TikTok video URL"
                         value={url}
-                        onChange={(e) => setUrl(e.target.value)}
+                        onChange={(e) => handleUrlChange(e.target.value)}
                     />
                 </div>
 
@@ -161,13 +209,10 @@ export default function DownloadPage() {
                                     Your browser does not support the video tag.
                                 </video>
                             </div>
-                            <Button 
-                                onClick={() => downloadFile(downloadLinks.video, 'tiktok-video.mp4')}
-                                className="w-full"
-                            >
-                                <Download className="mr-2 h-4 w-4" />
-                                Download Video
-                            </Button>
+                            <DownloadButton 
+                                url={downloadLinks.video}
+                                filename="tiktok-video.mp4"
+                            />
                         </div>
 
                         <div className="space-y-4">
@@ -181,14 +226,11 @@ export default function DownloadPage() {
                                     Your browser does not support the audio tag.
                                 </audio>
                             </div>
-                            <Button 
-                                onClick={() => downloadFile(downloadLinks.audio, 'tiktok-audio.mp3')}
+                            <DownloadButton 
+                                url={downloadLinks.audio}
+                                filename="tiktok-audio.mp3"
                                 variant="outline"
-                                className="w-full"
-                            >
-                                <Download className="mr-2 h-4 w-4" />
-                                Download Audio
-                            </Button>
+                            />
                         </div>
                     </div>
                 )}
