@@ -1,5 +1,4 @@
 import { NextRequest } from 'next/server';
-import { PythonShell } from 'python-shell';
 
 function getVideoId(youtubeUrl: string): string {
     if (youtubeUrl.includes("watch?v=")) {
@@ -17,54 +16,35 @@ export async function POST(req: NextRequest) {
         const videoId = getVideoId(url);
         console.log('Processing YouTube video ID:', videoId);
 
-        // Use python-shell to run the YouTube transcript API
-        const options = {
-            mode: 'text' as const,
-            pythonPath: 'python3',
-            args: [videoId]
-        };
+        // Use Innertube API to fetch captions
+        const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+        const html = await response.text();
+        
+        // Extract the caption track URL from the YouTube page
+        const captionTrackRegex = /"captionTracks":\[{"baseUrl":"([^"]+)"/;
+        const match = html.match(captionTrackRegex);
+        
+        if (!match || !match[1]) {
+            throw new Error('No captions available for this video');
+        }
 
-        const script = `
-from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api.formatters import TextFormatter
+        // Decode the caption URL
+        const captionUrl = decodeURIComponent(match[1]).replace(/\\u0026/g, '&');
+        
+        // Fetch the actual captions
+        const captionsResponse = await fetch(captionUrl);
+        const captionsXml = await captionsResponse.text();
 
-def fetch_transcript(video_id):
-    try:
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
-        formatter = TextFormatter()
-        formatted_transcript = formatter.format_transcript(transcript)
-        return formatted_transcript
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return None
+        // Parse the XML to extract text
+        const textRegex = /<text[^>]*>([^<]+)<\/text>/g;
+        const texts: string[] = [];
+        let textMatch;
+        
+        while ((textMatch = textRegex.exec(captionsXml)) !== null) {
+            texts.push(decodeURIComponent(textMatch[1].replace(/\+/g, ' ')));
+        }
 
-if __name__ == "__main__":
-    video_id = "${videoId}"
-    transcript = fetch_transcript(video_id)
-    if transcript:
-        print(transcript)
-    else:
-        print("No transcript available")
-`;
-
-        // Run the Python script
-        const result = await new Promise<string>((resolve, reject) => {
-            try {
-                PythonShell.runString(script, options).then((results: string[]) => {
-                    if (results && results.length > 0) {
-                        resolve(results.join('\n'));
-                    } else {
-                        reject(new Error('No transcript found'));
-                    }
-                }).catch((err: Error) => {
-                    console.error('Python error:', err);
-                    reject(err);
-                });
-            } catch (err) {
-                console.error('Python execution error:', err);
-                reject(err);
-            }
-        });
+        const transcript = texts.join(' ');
 
         // Format the response similar to TikTok processing
         const enrichedTranscription = `
@@ -74,7 +54,7 @@ if __name__ == "__main__":
         URL: ${url}
 
         Transcription:
-        ${result}`;
+        ${transcript}`;
 
         return Response.json({
             success: true,
