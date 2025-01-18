@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { PythonShell } from 'python-shell';
 
 function getVideoId(youtubeUrl: string): string {
     if (youtubeUrl.includes("watch?v=")) {
@@ -11,26 +12,59 @@ function getVideoId(youtubeUrl: string): string {
 
 export async function POST(req: NextRequest) {
     try {
-        const { url } = await req.json();
+        const body = await req.json();
+        const url = body.url;
         const videoId = getVideoId(url);
+        console.log('Processing YouTube video ID:', videoId);
 
-        // Use the YouTube captions API
-        const response = await fetch(`https://youtube-transcript.vercel.app/api/transcript/${videoId}`);
-        
-        if (!response.ok) {
-            throw new Error('Failed to fetch transcript');
-        }
+        // Use python-shell to run the YouTube transcript API
+        const options = {
+            mode: 'text' as const,
+            pythonPath: 'python3',
+            args: [videoId]
+        };
 
-        const data = await response.json();
-        
-        if (!data || !data.transcript) {
-            throw new Error('No transcript available for this video');
-        }
+        const script = `
+from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api.formatters import TextFormatter
 
-        // Format the transcript
-        const transcript = data.transcript
-            .map((item: { text: string }) => item.text)
-            .join(' ');
+def fetch_transcript(video_id):
+    try:
+        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        formatter = TextFormatter()
+        formatted_transcript = formatter.format_transcript(transcript)
+        return formatted_transcript
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return None
+
+if __name__ == "__main__":
+    video_id = "${videoId}"
+    transcript = fetch_transcript(video_id)
+    if transcript:
+        print(transcript)
+    else:
+        print("No transcript available")
+`;
+
+        // Run the Python script
+        const result = await new Promise<string>((resolve, reject) => {
+            try {
+                PythonShell.runString(script, options).then((results: string[]) => {
+                    if (results && results.length > 0) {
+                        resolve(results.join('\n'));
+                    } else {
+                        reject(new Error('No transcript found'));
+                    }
+                }).catch((err: Error) => {
+                    console.error('Python error:', err);
+                    reject(err);
+                });
+            } catch (err) {
+                console.error('Python execution error:', err);
+                reject(err);
+            }
+        });
 
         // Format the response similar to TikTok processing
         const enrichedTranscription = `
@@ -40,7 +74,7 @@ export async function POST(req: NextRequest) {
         URL: ${url}
 
         Transcription:
-        ${transcript}`;
+        ${result}`;
 
         return Response.json({
             success: true,
