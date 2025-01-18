@@ -7,7 +7,7 @@ import React from 'react';
 import { ContentCoach } from './ContentCoach';
 import { Script } from './Script';
 import { Analysis } from './Analysis';
-import { PenSquare, BarChart2, Brain, Video } from 'lucide-react';
+import { PenSquare, BarChart2, Brain, Video, Download } from 'lucide-react';
 import {
   TooltipProvider,
   Tooltip,
@@ -39,6 +39,12 @@ export default function BaseDashboard() {
         <Button variant="outline" className="w-80 h-16 flex items-center gap-3 text-lg">
           <PenSquare className="w-7 h-7" />
           Script Generator
+        </Button>
+      </Link>
+      <Link href="/download">
+        <Button variant="outline" className="w-80 h-16 flex items-center gap-3 text-lg">
+          <Download className="w-7 h-7" />
+          TikTok Downloader
         </Button>
       </Link>
       <TooltipProvider>

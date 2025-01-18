@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { InfoIcon, Zap, Copy, Check, User2, UserCircle, Loader2, FileEdit, X } from "lucide-react";
+import { InfoIcon, Zap, Copy, Check, User2, UserCircle, Loader2, FileEdit, X, Download } from "lucide-react";
 import {
     Tooltip,
     TooltipContent,
@@ -934,10 +934,22 @@ export function Script() {
                         {(referenceContent.includes('tiktok.com') || referenceContent.includes('youtube.com') || referenceContent.includes('youtu.be') || referenceContent.startsWith('Uploaded file:')) && (
                             <div className="mt-4 space-y-4">
                                 {embedHtml ? (
-                                    <div 
-                                        className="relative aspect-video w-full"
-                                        dangerouslySetInnerHTML={{ __html: embedHtml }}
-                                    />
+                                    <>
+                                        <div 
+                                            className="relative aspect-video w-full"
+                                            dangerouslySetInnerHTML={{ __html: embedHtml }}
+                                        />
+                                        {referenceContent.includes('tiktok.com') && (
+                                            <Button
+                                                variant="outline"
+                                                className="w-full"
+                                                onClick={() => window.open(`/download?url=${encodeURIComponent(referenceContent)}`, '_blank')}
+                                            >
+                                                <Download className="h-4 w-4 mr-2" />
+                                                Download Video/Audio
+                                            </Button>
+                                        )}
+                                    </>
                                 ) : referenceContent.startsWith('Uploaded file:') ? (
                                     <div className="w-full bg-gray-100 dark:bg-gray-900 rounded-lg p-4">
                                         <p className="text-gray-500">{referenceContent}</p>
