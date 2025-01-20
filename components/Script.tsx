@@ -844,7 +844,7 @@ export function Script() {
                                 <div className="relative">
                                     <Input
                                         id="referenceContent"
-                                        placeholder="Paste TikTok or YouTube video URL"
+                                        placeholder="Paste TikTok video link"
                                         value={referenceContent}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                             const newValue = e.target.value;
