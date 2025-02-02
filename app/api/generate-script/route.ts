@@ -1,80 +1,107 @@
-import { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
 
 export const runtime = 'edge';
 
-export async function POST(req: NextRequest) {
-  try {
-    const { topic, reference } = await req.json();
-    
-    if (!process.env.PERPLEXITY_API_KEY) {
-      throw new Error('PERPLEXITY_API_KEY is not set');
-    }
-
-    // Single call to Perplexity for script generation
-    const scriptResponse = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "llama-3.1-sonar-small-128k-online",
-        messages: [
-          {
-            role: "system",
-            content: "You are a TikTok script generator. Generate a script that matches the style of the reference video if provided. Return your response in JSON format with the following fields: script (the generated script), caption (a catchy caption), media (relevant video/image links), and sources (reference links used)."
-          },
-          {
-            role: "user",
-            content: `Create a TikTok video script on ${topic}.${
-              reference ? `\nHave the script be in exactly the transcript style as this:\n${reference.transcription}\nAlso, create a caption exactly the same style as this:\n${reference.caption}` : ''
-            }
-
-And return links to relevant videos and images (media) based on ${topic} that the user can use in their video, and return links to the sources you used to derive information about the topic.
-
-Return your final answer like as a string that resembles JSON, but not exactly JSON. Don't include things like backticks, or say the word json, or have newlines out side of the "". Example response template:
-{
- "script": "generated script",
- "caption": "generated caption",
- "media": ["media link 1", "media link 2"],
- "sources": ["source link 1", "source link 2"]
-}`
-          }
-        ]
-      })
-    });
-
-    if (!scriptResponse.ok) {
-      throw new Error(`Perplexity API error: ${scriptResponse.status}`);
-    }
-
-    const perplexityData = await scriptResponse.json();
-    console.log('Full Perplexity Response:', perplexityData);
-    
-    const result = perplexityData.choices[0].message.content;
-
-    // Parse the JSON response
-    let parsedResult;
+export async function POST(req: Request) {
     try {
-      parsedResult = JSON.parse(result);
-    } catch (e) {
-      console.error('Failed to parse Perplexity response as JSON:', e);
-      throw new Error('Invalid response format from Perplexity');
-    }
+        const body = await req.json();
+        const { topic, reference, style } = body;
 
-    // Return the parsed JSON response
-    return Response.json(parsedResult);
-  } catch (error) {
-    console.error('Error in /api/generate-script:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'An error occurred' 
-      }),
-      { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
-  }
+        let systemPrompt = `You are a professional TikTok script writer. Create a viral TikTok script that follows this exact format:
+
+Part 1: Hook
+[Scene 1]
+[Voice-over] The hook/opening line
+[On-screen visual] Description of what's shown on screen
+[Text-overlay] Any text overlays or captions
+
+Part 2: Scene
+[Scene 2]
+[Voice-over] The main content voice-over
+[On-screen visual] Description of visuals
+[Text-overlay] Text overlays
+
+Part 3: Call to Action
+[Scene 3]
+[Voice-over] The call to action or closing line
+[On-screen visual] Final visuals
+[Text-overlay] Final text overlays
+
+Each part should be separated by a blank line. Each scene should include all three elements: Voice-over, On-screen visual, and Text-overlay.
+Make the script engaging, concise, and optimized for TikTok's format.`;
+
+        let userPrompt = `Create a TikTok script about: ${topic}`;
+
+        if (reference) {
+            userPrompt += `\n\nUse this video as reference for style and tone:\n${JSON.stringify(reference, null, 2)}`;
+        }
+
+        if (style) {
+            userPrompt += `\n\nAdditional style instructions: ${style}`;
+        }
+
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4-turbo-preview",
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt }
+            ],
+            temperature: 0.7,
+        });
+
+        const script = completion.choices[0].message.content || '';
+
+        // Generate a caption
+        const captionCompletion = await openai.chat.completions.create({
+            model: "gpt-4-turbo-preview",
+            messages: [
+                {
+                    role: "system",
+                    content: "You are a TikTok caption writer. Create a compelling caption with relevant hashtags that will help this video go viral. Keep it concise and engaging."
+                },
+                {
+                    role: "user",
+                    content: `Write a TikTok caption for this script:\n\n${script}`
+                }
+            ],
+            temperature: 0.7,
+        });
+
+        // Generate media suggestions and sources
+        const mediaCompletion = await openai.chat.completions.create({
+            model: "gpt-4-turbo-preview",
+            messages: [
+                {
+                    role: "system",
+                    content: "You are a TikTok content researcher. Based on the script, suggest relevant media (stock footage, images, music) and credible sources that could be used in the video. Return your suggestions in JSON format with 'media' and 'sources' arrays."
+                },
+                {
+                    role: "user",
+                    content: `Suggest media and sources for this script:\n\n${script}`
+                }
+            ],
+            temperature: 0.7,
+            response_format: { type: "json_object" }
+        });
+
+        const mediaData = JSON.parse(mediaCompletion.choices[0].message.content || '{"media":[],"sources":[]}');
+
+        return NextResponse.json({
+            script,
+            caption: captionCompletion.choices[0].message.content || '',
+            media: mediaData.media || [],
+            sources: mediaData.sources || []
+        });
+    } catch (error) {
+        console.error('Error generating script:', error);
+        return NextResponse.json(
+            { error: 'Failed to generate script' },
+            { status: 500 }
+        );
+    }
 } 

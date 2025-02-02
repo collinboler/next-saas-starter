@@ -91,6 +91,45 @@ const FormattedText = ({ text }: { text: string }) => {
     );
 };
 
+const FormattedScript = ({ script }: { script: string }) => {
+    const sections = script.split('\n\n').map(section => {
+        const lines = section.split('\n');
+        const formattedLines = lines.map(line => {
+            if (line.includes('[Voice-over]')) {
+                return <div className="pl-4 text-blue-600 dark:text-blue-400">{line}</div>;
+            }
+            if (line.includes('[On-screen visual]')) {
+                return <div className="pl-4 text-green-600 dark:text-green-400">{line}</div>;
+            }
+            if (line.includes('[Text-overlay]')) {
+                return <div className="pl-4 text-purple-600 dark:text-purple-400">{line}</div>;
+            }
+            if (line.match(/^\[Scene \d+\]/) || line.match(/^Part \d+:/)) {
+                return <div className="font-bold text-lg mt-4">{line}</div>;
+            }
+            return <div className="pl-4">{line}</div>;
+        });
+        return <div className="mb-4">{formattedLines}</div>;
+    });
+    return <div>{sections}</div>;
+};
+
+const DialogueOnly = ({ script }: { script: string }) => {
+    // Extract only the voice-over lines
+    const voiceOverLines = script
+        .split('\n')
+        .filter(line => line.includes('[Voice-over]'))
+        .map(line => line.replace('[Voice-over]', '').trim());
+    
+    return (
+        <div className="space-y-2">
+            {voiceOverLines.map((line, index) => (
+                <p key={index} className="text-blue-600 dark:text-blue-400">{line}</p>
+            ))}
+        </div>
+    );
+};
+
 export function Script() {
     const { isSignedIn } = useAuth();
     const [currentStep, setCurrentStep] = useState(1);
@@ -116,7 +155,7 @@ export function Script() {
     const [trendingCategory, setTrendingCategory] = useState<TrendingCategory>('topics');
     const [trendingHashtags, setTrendingHashtags] = useState<TrendingTopic[]>([]);
     const [trendingCreators, setTrendingCreators] = useState<TrendingTopic[]>([]);
-    const [activeTab, setActiveTab] = useState<'script' | 'caption' | 'media' | 'sources'>('script');
+    const [activeTab, setActiveTab] = useState<'script' | 'caption' | 'media' | 'sources' | 'dialogue'>('script');
     const [videoMetadata, setVideoMetadata] = useState<{ author: string; caption: string } | null>(null);
     const [shouldGenerateOnSignIn, setShouldGenerateOnSignIn] = useState(false);
     const [hasCopied, setHasCopied] = useState(false);
@@ -532,7 +571,13 @@ export function Script() {
         setShowAudioPlayer(false);
         
         try {
-            // First check if we have enough credits
+            // Extract only voice-over lines for TTS
+            const voiceOverText = generatedScript
+                .split('\n')
+                .filter(line => line.includes('[Voice-over]'))
+                .map(line => line.replace('[Voice-over]', '').trim())
+                .join('\n');
+
             const creditResponse = await fetch('/api/credits', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -549,7 +594,7 @@ export function Script() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    text: generatedScript,
+                    text: voiceOverText,
                     voice: selectedVoice
                 })
             });
@@ -576,12 +621,8 @@ export function Script() {
             // Dispatch event to refresh token count
             window.dispatchEvent(new Event('refreshTokenCount'));
         } catch (error) {
-            console.error('Detailed TTS error:', {
-                error,
-                message: error instanceof Error ? error.message : String(error),
-                stack: error instanceof Error ? error.stack : undefined
-            });
-            alert('Failed to generate audio. Please try again in a few moments.');
+            console.error('TTS error:', error);
+            alert('Failed to generate audio. Please try again.');
         } finally {
             setGeneratingTTS(false);
         }
@@ -1061,7 +1102,13 @@ export function Script() {
                                 className={`px-4 py-2 ${activeTab === 'script' ? 'border-b-2 border-orange-500 text-orange-500' : 'text-gray-500'}`}
                                 onClick={() => setActiveTab('script')}
                             >
-                                Generated Script
+                                Full Script
+                            </button>
+                            <button
+                                className={`px-4 py-2 ${activeTab === 'dialogue' ? 'border-b-2 border-orange-500 text-orange-500' : 'text-gray-500'}`}
+                                onClick={() => setActiveTab('dialogue')}
+                            >
+                                Voice-Over Only
                             </button>
                             <button
                                 className={`px-4 py-2 ${activeTab === 'caption' ? 'border-b-2 border-orange-500 text-orange-500' : 'text-gray-500'}`}
@@ -1090,7 +1137,7 @@ export function Script() {
                         {activeTab === 'script' && (
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center">
-                                    <h3 className="text-sm font-medium">Generated Script</h3>
+                                    <h3 className="text-sm font-medium">Full Script</h3>
                                     <div className="flex gap-2">
                                         <Button
                                             variant="ghost"
@@ -1130,8 +1177,37 @@ export function Script() {
                                             className="min-h-[200px] font-mono text-sm border-0 focus-visible:ring-0 p-0"
                                         />
                                     ) : (
-                                        <FormattedText text={generatedScript} />
+                                        <FormattedScript script={generatedScript} />
                                     )}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'dialogue' && (
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-sm font-medium">Voice-Over Script</h3>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-muted-foreground hover:text-foreground"
+                                        onClick={() => copyToClipboard(
+                                            generatedScript
+                                                .split('\n')
+                                                .filter(line => line.includes('[Voice-over]'))
+                                                .map(line => line.replace('[Voice-over]', '').trim())
+                                                .join('\n')
+                                        )}
+                                    >
+                                        {hasCopied ? (
+                                            <Check className="h-4 w-4 text-green-500" />
+                                        ) : (
+                                            <Copy className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                </div>
+                                <div className="relative bg-background rounded-lg p-4 border">
+                                    <DialogueOnly script={generatedScript} />
                                 </div>
                             </div>
                         )}
@@ -1161,11 +1237,26 @@ export function Script() {
 
                         {activeTab === 'media' && generatedMedia.length > 0 && (
                             <div className="space-y-4">
-                                <h3 className="text-sm font-medium">Suggested Media</h3>
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-sm font-medium">Suggested Media</h3>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-muted-foreground hover:text-foreground"
+                                        onClick={() => copyToClipboard(generatedMedia.join('\n'))}
+                                    >
+                                        {hasCopied ? (
+                                            <Check className="h-4 w-4 text-green-500" />
+                                        ) : (
+                                            <Copy className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                </div>
                                 <div className="bg-background rounded-lg p-4 border">
-                                    <ul className="list-disc pl-5 space-y-2">
+                                    <ul className="space-y-3">
                                         {generatedMedia.map((media, index) => (
-                                            <li key={index}>
+                                            <li key={index} className="flex items-start gap-2">
+                                                <span className="text-orange-500 mt-1">•</span>
                                                 <a 
                                                     href={media}
                                                     target="_blank"
@@ -1183,11 +1274,26 @@ export function Script() {
 
                         {activeTab === 'sources' && generatedSources.length > 0 && (
                             <div className="space-y-4">
-                                <h3 className="text-sm font-medium">Sources</h3>
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-sm font-medium">Sources & References</h3>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-muted-foreground hover:text-foreground"
+                                        onClick={() => copyToClipboard(generatedSources.join('\n'))}
+                                    >
+                                        {hasCopied ? (
+                                            <Check className="h-4 w-4 text-green-500" />
+                                        ) : (
+                                            <Copy className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                </div>
                                 <div className="bg-background rounded-lg p-4 border">
-                                    <ul className="list-disc pl-5 space-y-2">
+                                    <ul className="space-y-3">
                                         {generatedSources.map((source, index) => (
-                                            <li key={index}>
+                                            <li key={index} className="flex items-start gap-2">
+                                                <span className="text-orange-500 mt-1">•</span>
                                                 <a 
                                                     href={source}
                                                     target="_blank"
