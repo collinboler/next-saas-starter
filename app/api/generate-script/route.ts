@@ -78,7 +78,25 @@ Make the script engaging, concise, and optimized for TikTok's format.`;
             messages: [
                 {
                     role: "system",
-                    content: "You are a TikTok content researcher. Based on the script, suggest relevant media (stock footage, images, music) and credible sources that could be used in the video. Return your suggestions in JSON format with 'media' and 'sources' arrays."
+                    content: `You are a TikTok content researcher. Based on the script, suggest relevant media and sources that could be used in the video. 
+                    For each media suggestion, provide:
+                    1. A description of what's needed
+                    2. Suggested source/website to find it
+                    3. Type (video, image, music, sound effect)
+                    
+                    Return your suggestions in JSON format with:
+                    {
+                        "media": [
+                            {
+                                "type": "video/image/music/sfx",
+                                "description": "what is needed",
+                                "source": "where to find it"
+                            }
+                        ],
+                        "sources": [
+                            "reference url or citation"
+                        ]
+                    }`
                 },
                 {
                     role: "user",

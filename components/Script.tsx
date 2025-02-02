@@ -24,6 +24,12 @@ interface TrendingTopic {
 // Add type for trending category
 type TrendingCategory = 'topics' | 'hashtags' | 'creators';
 
+interface MediaItem {
+    type: string;
+    description: string;
+    source: string;
+}
+
 const FormattedText = ({ text }: { text: string }) => {
     return (
         <div className="whitespace-pre-wrap">
@@ -139,7 +145,7 @@ export function Script() {
     const [loading, setLoading] = useState(false);
     const [generatedScript, setGeneratedScript] = useState("");
     const [generatedCaption, setGeneratedCaption] = useState("");
-    const [generatedMedia, setGeneratedMedia] = useState<string[]>([]);
+    const [generatedMedia, setGeneratedMedia] = useState<MediaItem[]>([]);
     const [generatedSources, setGeneratedSources] = useState<string[]>([]);
     const [topicAnalysis, setTopicAnalysis] = useState("");
     const [referenceAnalysis, setReferenceAnalysis] = useState("");
@@ -1243,7 +1249,11 @@ export function Script() {
                                         variant="ghost"
                                         size="icon"
                                         className="text-muted-foreground hover:text-foreground"
-                                        onClick={() => copyToClipboard(generatedMedia.join('\n'))}
+                                        onClick={() => copyToClipboard(
+                                            generatedMedia.map(item => 
+                                                `${item.type.toUpperCase()}: ${item.description}\nSource: ${item.source}`
+                                            ).join('\n\n')
+                                        )}
                                     >
                                         {hasCopied ? (
                                             <Check className="h-4 w-4 text-green-500" />
@@ -1253,17 +1263,27 @@ export function Script() {
                                     </Button>
                                 </div>
                                 <div className="bg-background rounded-lg p-4 border">
-                                    <ul className="space-y-3">
+                                    <ul className="space-y-4">
                                         {generatedMedia.map((media, index) => (
-                                            <li key={index} className="flex items-start gap-2">
-                                                <span className="text-orange-500 mt-1">•</span>
+                                            <li key={index} className="space-y-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                                        media.type === 'video' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' :
+                                                        media.type === 'image' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' :
+                                                        media.type === 'music' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300' :
+                                                        'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300'
+                                                    }`}>
+                                                        {media.type.toUpperCase()}
+                                                    </span>
+                                                    <p className="text-sm">{media.description}</p>
+                                                </div>
                                                 <a 
-                                                    href={media}
+                                                    href={media.source}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-blue-500 hover:text-blue-600 hover:underline break-all"
+                                                    className="text-sm text-blue-500 hover:text-blue-600 hover:underline ml-6 block"
                                                 >
-                                                    {media}
+                                                    {media.source}
                                                 </a>
                                             </li>
                                         ))}
