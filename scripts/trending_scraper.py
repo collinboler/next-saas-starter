@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, timezone, UTC
 import os
 from os import path
 
@@ -97,7 +97,7 @@ def get_creators():
         return creators
     
     if creators:
-        result = "Trending Creators in the US on " + datetime.utcnow().strftime("%m/%d/%Y") + ":\n"
+        result = "Trending Creators in the US on " + datetime.now(UTC).strftime("%m/%d/%Y") + ":\n"
         for index, creator in enumerate(creators, start=1):
             result += f"{index}. Username: {creator['username']}, Nickname: {creator['nickname']}\n"
         return result
@@ -191,7 +191,7 @@ def write_to_file():
         print(f"Deleted previous file: {latest_file}")
 
     # Create new file
-    date_str = datetime.utcnow().strftime("%m-%d-%Y")
+    date_str = datetime.now(UTC).strftime("%m-%d-%Y")
     filename = path.join(script_dir, f"{date_str}.txt")
     
     # Collect and write data

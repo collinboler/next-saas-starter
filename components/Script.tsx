@@ -110,7 +110,7 @@ const FormattedScript = ({ script }: { script: string }) => {
             if (line.includes('[Text-overlay]')) {
                 return <div className="pl-4 text-purple-600 dark:text-purple-400">{line}</div>;
             }
-            if (line.match(/^\[Scene \d+\]/) || line.match(/^Part \d+:/)) {
+            if (line.match(/^\[Hook:|^\[Scene:|^\[Call to Action:/)) {
                 return <div className="font-bold text-lg mt-4">{line}</div>;
             }
             return <div className="pl-4">{line}</div>;

@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
+interface MediaItem {
+    type: string;
+    description: string;
+    source: string;
+}
+
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
@@ -12,35 +18,50 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { topic, reference, style } = body;
 
-        let systemPrompt = `You are a professional TikTok script writer. Create a viral TikTok script that follows this exact format:
+        const systemPrompt = `You are a professional TikTok content creator. Create a complete TikTok content package that includes:
 
-Part 1: Hook
-[Scene 1]
+1. SCRIPT in this exact format:
+***Hook:***
 [Voice-over] The hook/opening line
 [On-screen visual] Description of what's shown on screen
 [Text-overlay] Any text overlays or captions
 
-Part 2: Scene
-[Scene 2]
+***Scene:***
 [Voice-over] The main content voice-over
 [On-screen visual] Description of visuals
 [Text-overlay] Text overlays
 
-Part 3: Call to Action
-[Scene 3]
+***Call to Action:***
 [Voice-over] The call to action or closing line
 [On-screen visual] Final visuals
 [Text-overlay] Final text overlays
 
-Each part should be separated by a blank line. Each scene should include all three elements: Voice-over, On-screen visual, and Text-overlay.
-Make the script engaging, concise, and optimized for TikTok's format.`;
+2. CAPTION: Create a compelling TikTok caption with relevant hashtags (keep it concise and engaging)
 
-        let userPrompt = `Create a TikTok script about: ${topic}`;
+3. MEDIA SUGGESTIONS: Provide specific media assets needed for the video in this JSON format:
+{
+    "media": [
+        {
+            "type": "video/image/music/sfx",
+            "description": "what is needed",
+            "source": "direct URL to the specific asset"
+        }
+    ],
+    "sources": ["reference urls"]
+}
 
+For media sources, use:
+- Videos: Pexels (https://www.pexels.com/videos/...)
+- Images: Unsplash (https://unsplash.com/photos/...)
+- Music: Pixabay Music (https://pixabay.com/music/...)
+- Sound Effects: Pixabay (https://pixabay.com/sound-effects/...)
+
+Return the response in JSON format with "script", "caption", and "mediaData" keys.`;
+
+        let userPrompt = `Create a TikTok content package about: ${topic}`;
         if (reference) {
             userPrompt += `\n\nUse this video as reference for style and tone:\n${JSON.stringify(reference, null, 2)}`;
         }
-
         if (style) {
             userPrompt += `\n\nAdditional style instructions: ${style}`;
         }
@@ -52,67 +73,26 @@ Make the script engaging, concise, and optimized for TikTok's format.`;
                 { role: "user", content: userPrompt }
             ],
             temperature: 0.7,
-        });
-
-        const script = completion.choices[0].message.content || '';
-
-        // Generate a caption
-        const captionCompletion = await openai.chat.completions.create({
-            model: "gpt-4-turbo-preview",
-            messages: [
-                {
-                    role: "system",
-                    content: "You are a TikTok caption writer. Create a compelling caption with relevant hashtags that will help this video go viral. Keep it concise and engaging."
-                },
-                {
-                    role: "user",
-                    content: `Write a TikTok caption for this script:\n\n${script}`
-                }
-            ],
-            temperature: 0.7,
-        });
-
-        // Generate media suggestions and sources
-        const mediaCompletion = await openai.chat.completions.create({
-            model: "gpt-4-turbo-preview",
-            messages: [
-                {
-                    role: "system",
-                    content: `You are a TikTok content researcher. Based on the script, suggest relevant media and sources that could be used in the video. 
-                    For each media suggestion, provide:
-                    1. A description of what's needed
-                    2. Suggested source/website to find it
-                    3. Type (video, image, music, sound effect)
-                    
-                    Return your suggestions in JSON format with:
-                    {
-                        "media": [
-                            {
-                                "type": "video/image/music/sfx",
-                                "description": "what is needed",
-                                "source": "where to find it"
-                            }
-                        ],
-                        "sources": [
-                            "reference url or citation"
-                        ]
-                    }`
-                },
-                {
-                    role: "user",
-                    content: `Suggest media and sources for this script:\n\n${script}`
-                }
-            ],
-            temperature: 0.7,
             response_format: { type: "json_object" }
         });
 
-        const mediaData = JSON.parse(mediaCompletion.choices[0].message.content || '{"media":[],"sources":[]}');
+        const response = JSON.parse(completion.choices[0].message.content || '{}');
+        const mediaData = response.mediaData || { media: [], sources: [] };
+
+        // Validate media URLs
+        const validatedMedia = mediaData.media.map((item: MediaItem) => ({
+            ...item,
+            source: item.source.startsWith('http') ? item.source : 
+                item.type === 'video' ? 'https://www.pexels.com/videos/' :
+                item.type === 'image' ? 'https://unsplash.com/photos/' :
+                item.type === 'music' ? 'https://pixabay.com/music/' :
+                'https://pixabay.com/sound-effects/'
+        }));
 
         return NextResponse.json({
-            script,
-            caption: captionCompletion.choices[0].message.content || '',
-            media: mediaData.media || [],
+            script: response.script || '',
+            caption: response.caption || '',
+            media: validatedMedia,
             sources: mediaData.sources || []
         });
     } catch (error) {
